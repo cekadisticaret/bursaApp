@@ -4,6 +4,9 @@ workflows:
     max_build_duration: 90
     instance_type: mac_mini_m2
     working_directory: mobile
+    # Codemagic → Teams → Integrations → App Store Connect API key adı ile aynı olmalı
+    integrations:
+      app_store_connect: bursaapp
     environment:
       flutter: stable
       xcode: latest
