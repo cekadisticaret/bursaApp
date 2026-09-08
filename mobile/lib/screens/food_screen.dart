@@ -15,13 +15,9 @@ class FoodScreen extends StatefulWidget {
 }
 
 class _FoodScreenState extends State<FoodScreen> {
-  static const _sections = [
-    ('food', 'Restoran & kafe'),
-    ('fun', 'Canlı müzik'),
-    ('fun', 'Eğlence'),
-  ];
-
   String _filterKey = 'food';
+  bool _loading = true;
+  List<PlaceItem> _places = [];
 
   @override
   void initState() {
