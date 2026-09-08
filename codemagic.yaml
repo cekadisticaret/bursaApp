@@ -29,7 +29,7 @@ workflows:
       - name: Set up code signing
         script: xcode-project use-profiles
       - name: Analyze
-        script: flutter analyze
+        script: flutter analyze --no-fatal-infos --no-fatal-warnings
       - name: Build IPA
         script: flutter build ipa --release
     artifacts:

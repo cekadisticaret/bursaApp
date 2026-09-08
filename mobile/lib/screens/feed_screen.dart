@@ -114,7 +114,10 @@ class _FeedScreenState extends State<FeedScreen> {
           else
             ..._items.map((item) {
               if (item is EventItem) return _EventStrip(event: item);
-              return _FeedCard(item: item as FeedItem, onLike: () => _like(item as FeedItem));
+              if (item is FeedItem) {
+                return _FeedCard(item: item, onLike: () => _like(item));
+              }
+              return const SizedBox.shrink();
             }),
           if (_hasMore && !_loading)
             TextButton(onPressed: () => _load(), child: const Text('Daha fazla')),

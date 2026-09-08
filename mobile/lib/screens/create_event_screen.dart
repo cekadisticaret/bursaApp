@@ -68,8 +68,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
+          DropdownButton<String>(
             value: _category,
+            isExpanded: true,
             items: const [
               DropdownMenuItem(value: 'concert', child: Text('Konser')),
               DropdownMenuItem(value: 'theater', child: Text('Tiyatro')),

@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../core/api/models.dart';
 import '../core/auth/auth_store.dart';
-import '../core/theme/app_theme.dart';
 import '../widgets/category_pills.dart';
 import '../widgets/destination_card.dart';
 
