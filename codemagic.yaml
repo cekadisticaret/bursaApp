@@ -7,12 +7,14 @@ workflows:
     integrations:
       app_store_connect: bursaapp
     environment:
-      groups:
-        - code_signing
       vars:
         BUNDLE_ID: com.bursaapp.mobile
       flutter: stable
       xcode: latest
+      # Codemagic UI → Code signing identities'e yüklenen .p12 + App Store profili
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.bursaapp.mobile
     scripts:
       - name: Bootstrap Flutter platforms
         script: |
@@ -24,28 +26,6 @@ workflows:
           /usr/libexec/PlistBuddy -c "Set :NSLocationWhenInUseUsageDescription 'Yakınındaki mekanları haritada göstermek için konum kullanılır.'" ios/Runner/Info.plist
       - name: Dependencies
         script: flutter pub get
-      - name: Set up keychain
-        script: keychain initialize
-      - name: Fetch signing files
-        script: |
-          set -e
-          # Önce mevcut distribution sertifikalarını indir; private key eşleşirse kullanılır
-          app-store-connect certificates list --type IOS_DISTRIBUTION --save || true
-          if ! app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create \
-            --verbose; then
-            echo ""
-            echo "IMZA HATASI:"
-            echo "1) CERTIFICATE_PRIVATE_KEY mevcut 3 Distribution sertifikasından biriyle eşleşmiyor"
-            echo "2) Apple en fazla 3 Distribution sertifikasına izin verir (409 = kota dolu)"
-            echo ""
-            echo "Çözüm A: developer.apple.com → Certificates → kullanılmayan 1 Distribution sertifikasını Revoke → rebuild"
-            echo "Çözüm B: Mevcut sertifikaya ait private key'i CERTIFICATE_PRIVATE_KEY olarak Codemagic'e yapıştır"
-            exit 1
-          fi
-      - name: Add certificates to keychain
-        script: keychain add-certificates
       - name: Set up code signing
         script: xcode-project use-profiles
       - name: Analyze
