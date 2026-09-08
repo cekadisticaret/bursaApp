@@ -99,6 +99,8 @@
   var routeLayer;
   var markers = [];
   var routeReqId = 0;
+  var selectPlace = function () {};
+  var clearSelection = function () {};
 
   var routeStyle = {
     color: "#2563eb",
@@ -112,6 +114,8 @@
     L.polyline([center, [destLat, destLng]], Object.assign({}, routeStyle, {
       opacity: 0.45,
       dashArray: "6 10",
+      interactive: false,
+      pane: "nxNoHit",
     })).addTo(routeLayer);
   }
 
@@ -137,7 +141,10 @@
         if (reqId !== routeReqId) return;
         routeLayer.clearLayers();
         if (data.ok && data.coordinates && data.coordinates.length > 1) {
-          L.polyline(data.coordinates, routeStyle).addTo(routeLayer);
+          L.polyline(data.coordinates, Object.assign({}, routeStyle, {
+            interactive: false,
+            pane: "nxNoHit",
+          })).addTo(routeLayer);
           return;
         }
         drawStraightRoute(destLat, destLng);
@@ -191,6 +198,10 @@
       zoomControl: false,
     }).setView(center, 14);
 
+    map.createPane("nxNoHit");
+    var noHitPane = map.getPane("nxNoHit");
+    if (noHitPane) noHitPane.style.pointerEvents = "none";
+
     L.control.zoom({ position: "topright" }).addTo(map);
 
     function addTileLayers(target, layers) {
@@ -223,29 +234,44 @@
         fillOpacity: 0.05,
         dashArray: "4 8",
         interactive: false,
+        pane: "nxNoHit",
+        className: "nx-radius-ring",
       }).addTo(map);
     }
 
     routeLayer = L.layerGroup().addTo(map);
     markers = [];
     var bounds = [center];
+    var dotR = isMobile ? 14 : 12;
+    var hitR = isMobile ? 26 : 20;
 
     pins.forEach(function (p, idx) {
       if (p.lat == null || p.lng == null) return;
-      var m = L.circleMarker([p.lat, p.lng], {
-        radius: 12,
+      var latlng = [p.lat, p.lng];
+      var hit = L.circleMarker(latlng, {
+        radius: hitR,
+        stroke: false,
+        fillColor: colorFor(p),
+        fillOpacity: 0.01,
+        interactive: true,
+        className: "nx-map-hit",
+      }).addTo(map);
+      var dot = L.circleMarker(latlng, {
+        radius: dotR,
         color: "#fff",
         weight: 2,
         fillColor: colorFor(p),
         fillOpacity: 0.95,
+        interactive: false,
         className: "nx-map-pin",
       }).addTo(map);
-      m._nxIdx = idx;
-      m.on("click", function () {
+      hit._nxIdx = idx;
+      hit.on("click", function (ev) {
+        L.DomEvent.stopPropagation(ev);
         selectPlace(idx);
       });
-      markers.push(m);
-      bounds.push([p.lat, p.lng]);
+      markers.push({ hit: hit, dot: dot, _nxIdx: idx });
+      bounds.push(latlng);
     });
 
     if (bounds.length > 1) {
@@ -354,12 +380,15 @@
     listButtons.forEach(function (btn) {
       btn.classList.remove("on");
     });
-    markers.forEach(function (m) {
-      m.setRadius(12);
+    markers.forEach(function (pair) {
+      var dotR = isMobile ? 14 : 12;
+      var hitR = isMobile ? 26 : 20;
+      pair.hit.setRadius(hitR);
+      pair.dot.setRadius(dotR);
     });
   }
 
-  function selectPlace(idx) {
+  selectPlace = function (idx) {
     var p = pins[idx];
     if (!p) return;
     selectedIdx = idx;
@@ -367,13 +396,13 @@
     listButtons.forEach(function (btn) {
       btn.classList.toggle("on", Number(btn.getAttribute("data-idx")) === idx);
     });
-    markers.forEach(function (m) {
-      if (m._nxIdx === idx) {
-        m.setRadius(16);
-        m.bringToFront();
-      } else {
-        m.setRadius(12);
-      }
+    markers.forEach(function (pair) {
+      var sel = pair._nxIdx === idx;
+      var dotR = sel ? (isMobile ? 18 : 16) : (isMobile ? 14 : 12);
+      var hitR = sel ? dotR + 12 : (isMobile ? 26 : 20);
+      pair.dot.setRadius(dotR);
+      pair.hit.setRadius(hitR);
+      if (sel) pair.hit.bringToFront();
     });
 
     routeLayer.clearLayers();
@@ -483,6 +512,37 @@
   });
 
   if (usedFallback) goGeo();
+
+  function haversineM(a, b) {
+    var R = 6371000;
+    var dLat = ((b.lat - a.lat) * Math.PI) / 180;
+    var dLng = ((b.lng - a.lng) * Math.PI) / 180;
+    var lat1 = (a.lat * Math.PI) / 180;
+    var lat2 = (b.lat * Math.PI) / 180;
+    var h =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return 2 * R * Math.asin(Math.sqrt(h));
+  }
+
+  function findPinNear(latlng, maxM) {
+    var best = -1;
+    var bestD = maxM;
+    pins.forEach(function (p, idx) {
+      if (p.lat == null || p.lng == null) return;
+      var d = haversineM(latlng, L.latLng(p.lat, p.lng));
+      if (d < bestD) {
+        bestD = d;
+        best = idx;
+      }
+    });
+    return best;
+  }
+
+  map.on("click", function (e) {
+    var idx = findPinNear(e.latlng, isMobile ? 280 : 180);
+    if (idx >= 0) selectPlace(idx);
+  });
 
   if (pins.length && listButtons.length && !isMobile) {
     selectPlace(0);
