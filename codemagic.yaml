@@ -4,32 +4,39 @@ workflows:
     max_build_duration: 90
     instance_type: mac_mini_m2
     working_directory: mobile
-    # Codemagic → Teams → Integrations → App Store Connect API key adı ile aynı olmalı
     integrations:
       app_store_connect: bursaapp
     environment:
+      groups:
+        - code_signing
+      vars:
+        BUNDLE_ID: com.bursaapp.mobile
       flutter: stable
       xcode: latest
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.bursaapp.mobile
     scripts:
       - name: Bootstrap Flutter platforms
         script: |
           if [ ! -f ios/Runner.xcodeproj/project.pbxproj ]; then
-            # bundle id = org + project-name → com.bursaapp.mobile
             flutter create . --org com.bursaapp --project-name mobile --platforms=ios,android
           fi
-          # Codemagic ios_signing bundle_identifier ile birebir aynı olmalı
           sed -i '' 's/PRODUCT_BUNDLE_IDENTIFIER = .*/PRODUCT_BUNDLE_IDENTIFIER = com.bursaapp.mobile;/g' ios/Runner.xcodeproj/project.pbxproj
           /usr/libexec/PlistBuddy -c "Add :NSLocationWhenInUseUsageDescription string 'Yakınındaki mekanları haritada göstermek için konum kullanılır.'" ios/Runner/Info.plist 2>/dev/null || \
           /usr/libexec/PlistBuddy -c "Set :NSLocationWhenInUseUsageDescription 'Yakınındaki mekanları haritada göstermek için konum kullanılır.'" ios/Runner/Info.plist
       - name: Dependencies
         script: flutter pub get
-      - name: Analyze
-        script: flutter analyze
+      - name: Set up keychain
+        script: keychain initialize
+      - name: Fetch signing files
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+      - name: Add certificates to keychain
+        script: keychain add-certificates
       - name: Set up code signing
         script: xcode-project use-profiles
+      - name: Analyze
+        script: flutter analyze
       - name: Build IPA
         script: flutter build ipa --release
     artifacts:

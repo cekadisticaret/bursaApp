@@ -22,3 +22,5 @@ android/local.properties
 # Secrets
 *.env
 GoogleService-Info.plist
+ios_distribution_private_key
+ios_distribution_private_key.pub
