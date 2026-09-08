@@ -9,7 +9,7 @@ import '../core/theme/app_theme.dart';
 import '../widgets/login_sheet.dart';
 import 'create_event_screen.dart';
 import 'leaders_screen.dart';
-import 'okey_screen.dart';
+import 'activity_buddy_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -85,7 +85,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(width: 10),
             Expanded(child: _QuickTile(icon: Icons.emoji_events, label: 'Liderler', color: AppColors.sky, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const LeadersScreen())))),
             const SizedBox(width: 10),
-            Expanded(child: _QuickTile(icon: Icons.grid_view, label: 'Okey', color: AppColors.accentDeep, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const OkeyScreen())))),
+            Expanded(child: _QuickTile(icon: Icons.groups_rounded, label: 'Partner ara', color: AppColors.accentDeep, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const ActivityBuddyScreen())))),
           ],
         ),
         const SizedBox(height: 20),

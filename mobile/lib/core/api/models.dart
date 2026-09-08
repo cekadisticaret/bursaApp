@@ -212,29 +212,77 @@ class LeaderRow {
   }
 }
 
-class OkeySeek {
-  OkeySeek({
+class ActivityType {
+  ActivityType({required this.key, required this.label, required this.emoji, required this.defaultTitle});
+  final String key;
+  final String label;
+  final String emoji;
+  final String defaultTitle;
+
+  factory ActivityType.fromJson(Map<String, dynamic> j) => ActivityType(
+        key: j['key']?.toString() ?? 'other',
+        label: j['label']?.toString() ?? '',
+        emoji: j['emoji']?.toString() ?? '✨',
+        defaultTitle: j['default_title']?.toString() ?? '',
+      );
+}
+
+class ActivitySeek {
+  ActivitySeek({
     required this.id,
+    required this.activityType,
+    required this.activityLabel,
+    required this.emoji,
+    required this.title,
     required this.host,
     required this.ilce,
+    required this.venue,
     required this.timeLabel,
     required this.note,
     required this.pointsMin,
+    required this.slotsNeeded,
+    required this.spotsLeft,
+    required this.joined,
+    required this.isMine,
+    this.contactHint = '',
   });
 
   final int id;
+  final String activityType;
+  final String activityLabel;
+  final String emoji;
+  final String title;
   final String host;
   final String ilce;
+  final String venue;
   final String timeLabel;
   final String note;
   final int pointsMin;
+  final int slotsNeeded;
+  final int spotsLeft;
+  final bool joined;
+  final bool isMine;
+  final String contactHint;
 
-  factory OkeySeek.fromJson(Map<String, dynamic> j) => OkeySeek(
+  factory ActivitySeek.fromJson(Map<String, dynamic> j) => ActivitySeek(
         id: (j['id'] as num?)?.toInt() ?? 0,
+        activityType: j['activity_type']?.toString() ?? j['type']?.toString() ?? 'other',
+        activityLabel: j['activity_label']?.toString() ?? '',
+        emoji: j['emoji']?.toString() ?? '✨',
+        title: j['title']?.toString() ?? j['host']?.toString() ?? '',
         host: j['host']?.toString() ?? '',
         ilce: j['ilce']?.toString() ?? '',
+        venue: j['venue']?.toString() ?? '',
         timeLabel: j['time_label']?.toString() ?? '',
         note: j['note']?.toString() ?? '',
         pointsMin: (j['points_min'] as num?)?.toInt() ?? 0,
+        slotsNeeded: (j['slots_needed'] as num?)?.toInt() ?? 1,
+        spotsLeft: (j['spots_left'] as num?)?.toInt() ?? 1,
+        joined: j['joined'] == true,
+        isMine: j['is_mine'] == true,
+        contactHint: j['contact_hint']?.toString() ?? '',
       );
 }
+
+@Deprecated('Use ActivitySeek')
+typedef OkeySeek = ActivitySeek;

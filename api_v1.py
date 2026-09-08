@@ -580,6 +580,14 @@ def post_like_api(post_id: int):
 def mobile_menu():
     groups = [
         {
+            "title": "Topluluk",
+            "icon": "community",
+            "items": [
+                {"label": "Arkadaş / partner ara", "path": "/arkadas-ara", "category": "buddy"},
+                {"label": "Akış", "path": "/feed"},
+            ],
+        },
+        {
             "title": "Sağlık",
             "icon": "health",
             "items": [
@@ -660,29 +668,139 @@ def leaders_weekly():
         db.close()
 
 
+@bp.route("/activities/types")
+def activities_types():
+    from activity_seek import ACTIVITY_TYPES, SKILL_LEVELS
+
+    types = [
+        {"key": k, "label": v["label"], "emoji": v["emoji"], "default_title": v["default_title"]}
+        for k, v in ACTIVITY_TYPES.items()
+    ]
+    return jsonify({"ok": True, "types": types, "skill_levels": SKILL_LEVELS})
+
+
+@bp.route("/activities/seeking")
+def activities_seeking():
+    from activity_seek import ACTIVITY_TYPES, list_open_seeks, seek_public
+
+    activity_type = (request.args.get("type") or request.args.get("activity_type") or "").strip().lower()
+    ilce = (request.args.get("ilce") or "").strip()
+    if activity_type and activity_type not in ACTIVITY_TYPES:
+        activity_type = ""
+    viewer = load_user()
+    db = SessionLocal()
+    try:
+        rows = list_open_seeks(db, activity_type=activity_type or None, ilce=ilce or None)
+        return jsonify(
+            {
+                "ok": True,
+                "seeking": [seek_public(db, s, viewer) for s in rows],
+                "filter": {"type": activity_type or None, "ilce": ilce or None},
+            }
+        )
+    finally:
+        db.close()
+
+
+@bp.route("/activities/seeking", methods=["POST"])
+@login_required
+def activities_seeking_create():
+    from activity_seek import create_seek, seek_public
+
+    if not rate_ok("activity_seek", limit=8):
+        return _err("Çok hızlı — biraz bekle", 429)
+    user = load_user()
+    db = SessionLocal()
+    try:
+        seek, err = create_seek(db, user, _json())
+        if err:
+            return _err(err, 400)
+        return jsonify({"ok": True, "seek": seek_public(db, seek, user)}), 201
+    finally:
+        db.close()
+
+
+@bp.route("/activities/seeking/<int:seek_id>/join", methods=["POST"])
+@login_required
+def activities_seeking_join(seek_id: int):
+    from activity_seek import join_seek, seek_public
+
+    if not rate_ok("activity_join", limit=20):
+        return _err("Çok hızlı — biraz bekle", 429)
+    user = load_user()
+    db = SessionLocal()
+    try:
+        seek, err = join_seek(db, user, seek_id)
+        if err:
+            return _err(err, 400)
+        return jsonify({"ok": True, "seek": seek_public(db, seek, user)})
+    finally:
+        db.close()
+
+
+@bp.route("/activities/seeking/<int:seek_id>/join", methods=["DELETE"])
+@login_required
+def activities_seeking_leave(seek_id: int):
+    from activity_seek import leave_seek, seek_public
+
+    user = load_user()
+    db = SessionLocal()
+    try:
+        seek, err = leave_seek(db, user, seek_id)
+        if err:
+            return _err(err, 400)
+        return jsonify({"ok": True, "seek": seek_public(db, seek, user)})
+    finally:
+        db.close()
+
+
+@bp.route("/activities/seeking/<int:seek_id>", methods=["DELETE"])
+@login_required
+def activities_seeking_cancel(seek_id: int):
+    from activity_seek import cancel_seek
+
+    user = load_user()
+    db = SessionLocal()
+    try:
+        err = cancel_seek(db, user, seek_id)
+        if err:
+            return _err(err, 400)
+        return jsonify({"ok": True})
+    finally:
+        db.close()
+
+
 @bp.route("/okey/seeking")
 def okey_seeking():
-    """Okey 4. oyuncu — şimdilik örnek + boş slot; ileride gerçek eşleşme."""
-    return jsonify(
-        {
-            "ok": True,
-            "seeking": [
+    """Geriye uyumluluk — yalnız okey ilanları."""
+    from activity_seek import list_open_seeks, seek_public
+
+    viewer = load_user()
+    db = SessionLocal()
+    try:
+        rows = list_open_seeks(db, activity_type="okey")
+        seeking = [seek_public(db, s, viewer) for s in rows]
+        # Eski mobil alan adları
+        legacy = []
+        for s in seeking:
+            legacy.append(
                 {
-                    "id": 1,
-                    "host": "Ayşe K.",
-                    "ilce": "Nilüfer",
-                    "time_label": "Bu akşam 21:00",
-                    "note": "3 kişiyiz, 1 kişi arıyoruz",
-                    "points_min": 120,
-                },
-                {
-                    "id": 2,
-                    "host": "Mehmet T.",
-                    "ilce": "Osmangazi",
-                    "time_label": "Yarın 20:30",
-                    "note": "Kısa oyun, acele etmeyin :)",
-                    "points_min": 80,
-                },
-            ],
-        }
-    )
+                    "id": s["id"],
+                    "host": s["host"],
+                    "ilce": s["ilce"],
+                    "time_label": s["time_label"],
+                    "note": s["note"],
+                    "points_min": s["points_min"],
+                    "activity_type": s["activity_type"],
+                    "activity_label": s["activity_label"],
+                    "emoji": s["emoji"],
+                    "title": s["title"],
+                    "slots_needed": s["slots_needed"],
+                    "spots_left": s["spots_left"],
+                    "joined": s["joined"],
+                    "is_mine": s["is_mine"],
+                }
+            )
+        return jsonify({"ok": True, "seeking": legacy})
+    finally:
+        db.close()

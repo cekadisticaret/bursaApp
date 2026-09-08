@@ -2512,3 +2512,40 @@ a.cal-day.has-ev:hover .cal-dot{background:#fff}
   .mp-empty.wide{grid-column:1/-1}
   .mp-empty p{margin:0 0 12px;color:#6b7280;font-weight:600;font-size:14px}
 }
+
+/* Aktivite arkadaşı — /arkadas-ara */
+.as-feed-promo{display:flex;align-items:center;gap:12px;margin:0 0 14px;padding:14px 16px;border-radius:18px;background:linear-gradient(135deg,#eef2ff,#fdf2f8);border:1px solid rgba(91,95,239,.15);text-decoration:none;color:#1e293b;font-size:14px;font-weight:600}
+.as-feed-promo-ico{font-size:22px}
+.as-feed-promo-go{margin-left:auto;color:#5B5FEF;font-weight:900}
+.as-page{max-width:720px;margin:0 auto;padding:0 0 24px}
+.as-head{margin-bottom:16px}
+.as-lead{margin:0 0 12px;color:#64748b;font-size:14px;line-height:1.5}
+.as-filters{margin-bottom:8px}
+.as-compose{margin-bottom:16px}
+.as-compose-sum{cursor:pointer;font-weight:800;font-size:16px;list-style:none}
+.as-compose[open] .as-compose-sum{margin-bottom:14px}
+.as-form{display:grid;gap:12px}
+.as-form label{display:grid;gap:6px;font-size:13px;font-weight:700;color:#334155}
+.as-form label small{font-weight:600;color:#94a3b8}
+.as-form input,.as-form select,.as-form textarea{width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:12px;font:inherit;background:#fff}
+.as-form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.as-login{text-align:center}
+.as-login p{margin:0 0 12px;color:#64748b}
+.as-list{display:grid;gap:12px}
+.as-card-top{display:flex;align-items:flex-start;gap:12px}
+.as-emoji{font-size:28px;line-height:1}
+.as-card h2{margin:0;font-size:17px;font-weight:900}
+.as-meta{margin:4px 0 0;font-size:12px;color:#64748b;font-weight:600}
+.as-badge{margin-left:auto;white-space:nowrap;background:#eef2ff;color:#4338ca;font-size:11px;font-weight:800;padding:6px 10px;border-radius:999px}
+.as-note{margin:10px 0 0;font-size:14px;line-height:1.5;color:#334155}
+.as-venue{margin:6px 0 0;font-size:13px;color:#475569}
+.as-tags{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
+.as-tags span{font-size:11px;font-weight:700;padding:4px 8px;border-radius:999px;background:#f1f5f9;color:#475569}
+.as-joiners{margin:10px 0 0;padding:0;list-style:none;display:grid;gap:4px;font-size:13px}
+.as-joiners small{color:#94a3b8}
+.as-contact{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:#f0fdf4;font-size:13px;color:#166534}
+.as-actions{margin-top:12px;display:flex;justify-content:flex-end;gap:8px}
+.as-full{font-size:13px;font-weight:700;color:#94a3b8}
+.as-empty{text-align:center}
+.as-empty p{margin-bottom:12px;color:#64748b}
+@media(max-width:640px){.as-form-row{grid-template-columns:1fr}}

@@ -147,14 +147,45 @@ class BursaApi {
         .toList();
   }
 
-  Future<List<OkeySeek>> okeySeeking() async {
-    final uri = Uri.parse('${AppConfig.apiBase}/okey/seeking');
+  Future<List<ActivityType>> activityTypes() async {
+    final uri = Uri.parse('${AppConfig.apiBase}/activities/types');
+    final res = await _client.get(uri, headers: _headers);
+    final data = await _decode(res);
+    return (data['types'] as List? ?? [])
+        .map((e) => ActivityType.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<ActivitySeek>> activitySeeking({String? type}) async {
+    final qp = <String, String>{};
+    if (type != null && type.isNotEmpty) qp['type'] = type;
+    final uri = Uri.parse('${AppConfig.apiBase}/activities/seeking').replace(queryParameters: qp.isEmpty ? null : qp);
     final res = await _client.get(uri, headers: _headers);
     final data = await _decode(res);
     return (data['seeking'] as List? ?? [])
-        .map((e) => OkeySeek.fromJson(e as Map<String, dynamic>))
+        .map((e) => ActivitySeek.fromJson(e as Map<String, dynamic>))
         .toList();
   }
+
+  Future<void> createActivitySeek(Map<String, dynamic> payload) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/activities/seeking');
+    final res = await _client.post(uri, headers: _headers, body: jsonEncode(payload));
+    await _decode(res);
+  }
+
+  Future<void> joinActivitySeek(int id) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/activities/seeking/$id/join');
+    final res = await _client.post(uri, headers: _headers);
+    await _decode(res);
+  }
+
+  Future<void> leaveActivitySeek(int id) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/activities/seeking/$id/join');
+    final res = await _client.delete(uri, headers: _headers);
+    await _decode(res);
+  }
+
+  Future<List<ActivitySeek>> okeySeeking() => activitySeeking(type: 'okey');
 
   void dispose() => _client.close();
 }

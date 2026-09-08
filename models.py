@@ -263,6 +263,50 @@ class EventGoing(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
 
 
+class ActivitySeek(Base):
+    """Aktivite arkadaşı ilanı — okey 4., tenis partneri vb."""
+
+    __tablename__ = "activity_seeks"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    activity_type: Mapped[str] = mapped_column(String(24), nullable=False, default="other", index=True)
+    title: Mapped[str] = mapped_column(String(120), nullable=False, default="")
+    slots_needed: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    ilce: Mapped[str] = mapped_column(String(48), nullable=False, default="")
+    venue: Mapped[str] = mapped_column(String(160), nullable=False, default="")
+    when_label: Mapped[str] = mapped_column(String(80), nullable=False, default="")
+    when_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    note: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    skill_level: Mapped[str] = mapped_column(String(16), nullable=False, default="any")
+    points_min: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    contact_hint: Mapped[str] = mapped_column(String(120), nullable=False, default="")
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="open", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    user: Mapped["User"] = relationship("User")
+    joins: Mapped[list["ActivitySeekJoin"]] = relationship(
+        "ActivitySeekJoin", back_populates="seek", cascade="all, delete-orphan"
+    )
+
+
+class ActivitySeekJoin(Base):
+    """İlana katılım."""
+
+    __tablename__ = "activity_seek_joins"
+    __table_args__ = (UniqueConstraint("seek_id", "user_id", name="uq_seek_join_user"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    seek_id: Mapped[int] = mapped_column(Integer, ForeignKey("activity_seeks.id"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="joined", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+
+    seek: Mapped["ActivitySeek"] = relationship("ActivitySeek", back_populates="joins")
+    user: Mapped["User"] = relationship("User")
+
+
 class PostLike(Base):
     __tablename__ = "post_likes"
     __table_args__ = (UniqueConstraint("user_id", "post_id", name="uq_like_user_post"),)
@@ -663,6 +707,9 @@ def init_db() -> None:
     try:
         seed_admin(db)
         seed_places(db)
+        from activity_seek import seed_demo_seeks
+
+        seed_demo_seeks(db)
         db.commit()
     finally:
         db.close()

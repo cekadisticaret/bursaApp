@@ -131,7 +131,7 @@ def _mobile_tab() -> str:
     path = request.path or ""
     if path in ("/", "/etrafimda") or path.startswith("/harita"):
         return "home"
-    if path.startswith("/feed"):
+    if path.startswith("/feed") or path.startswith("/arkadas-ara"):
         return "feed"
     if path.startswith("/rota"):
         return "route"
@@ -799,6 +799,155 @@ def bugun():
         return render_template("today.html", today=data, nav="bugun", weather=_weather())
     finally:
         db.close()
+
+
+@app.route("/arkadas-ara", methods=["GET", "POST"])
+def arkadas_ara():
+    from urllib.parse import urlencode
+
+    from activity_seek import (
+        ACTIVITY_TYPES,
+        SKILL_LEVELS,
+        create_seek,
+        join_seek,
+        leave_seek,
+        list_open_seeks,
+        seek_public,
+    )
+    from catalog import ILCELER
+    from seo import page as seo_page
+
+    user = load_user()
+    activity_type = (request.args.get("type") or "").strip().lower()
+    ilce = (request.args.get("ilce") or "").strip()
+    if activity_type and activity_type not in ACTIVITY_TYPES:
+        activity_type = ""
+
+    if request.method == "POST":
+        if not user:
+            return redirect("/giris?next=/arkadas-ara")
+        if not rate_ok("activity_seek", limit=8):
+            flash("Çok hızlı — biraz bekle.", "err")
+            return redirect("/arkadas-ara")
+        db = SessionLocal()
+        try:
+            u = db.get(User, user.id)
+            if not u:
+                return redirect("/giris?next=/arkadas-ara")
+            payload = {
+                "activity_type": request.form.get("activity_type"),
+                "title": request.form.get("title"),
+                "slots_needed": request.form.get("slots_needed"),
+                "ilce": request.form.get("ilce"),
+                "venue": request.form.get("venue"),
+                "when_label": request.form.get("when_label"),
+                "note": request.form.get("note"),
+                "skill_level": request.form.get("skill_level"),
+                "points_min": request.form.get("points_min"),
+                "contact_hint": request.form.get("contact_hint"),
+            }
+            seek, err = create_seek(db, u, payload)
+            if err:
+                flash(err, "err")
+            else:
+                flash("İlan yayında — katılımcılar seni görebilir.", "ok")
+        finally:
+            db.close()
+        q = {}
+        if activity_type:
+            q["type"] = activity_type
+        if ilce:
+            q["ilce"] = ilce
+        return redirect("/arkadas-ara" + ("?" + urlencode(q) if q else ""))
+
+    db = SessionLocal()
+    try:
+        u = db.get(User, user.id) if user else None
+        rows = list_open_seeks(db, activity_type=activity_type or None, ilce=ilce or None)
+        seeks = [seek_public(db, s, u) for s in rows]
+        seo = seo_page(
+            title="Arkadaş / partner ara",
+            description="Okey 4., tenis partneri, halı saha oyuncusu — Bursa'da aktivite arkadaşı bul.",
+            path="/arkadas-ara",
+            breadcrumbs=[("Ana Sayfa", "/"), ("Arkadaş ara", "/arkadas-ara")],
+        )
+        return render_template(
+            "activity_seek.html",
+            seeks=seeks,
+            activity_types=ACTIVITY_TYPES,
+            skill_levels=SKILL_LEVELS,
+            ilceler=ILCELER,
+            filter_type=activity_type,
+            filter_ilce=ilce,
+            u=u,
+            nav="feed",
+            seo=seo,
+        )
+    finally:
+        db.close()
+
+
+@app.route("/arkadas-ara/<int:seek_id>/katil", methods=["POST"])
+def arkadas_ara_katil(seek_id: int):
+    from activity_seek import join_seek
+
+    user = load_user()
+    if not user:
+        return redirect(f"/giris?next=/arkadas-ara")
+    if not rate_ok("activity_join", limit=20):
+        flash("Çok hızlı — biraz bekle.", "err")
+        return redirect("/arkadas-ara")
+    db = SessionLocal()
+    try:
+        u = db.get(User, user.id)
+        if not u:
+            return redirect("/giris?next=/arkadas-ara")
+        _, err = join_seek(db, u, seek_id)
+        if err:
+            flash(err, "err")
+        else:
+            flash("Katıldın — ilan sahibi ve diğer katılımcıları görebilirsin.", "ok")
+    finally:
+        db.close()
+    return redirect("/arkadas-ara")
+
+
+@app.route("/arkadas-ara/<int:seek_id>/ayril", methods=["POST"])
+def arkadas_ara_ayril(seek_id: int):
+    from activity_seek import leave_seek
+
+    user = load_user()
+    if not user:
+        return redirect("/giris?next=/arkadas-ara")
+    db = SessionLocal()
+    try:
+        u = db.get(User, user.id)
+        if not u:
+            return redirect("/giris?next=/arkadas-ara")
+        _, err = leave_seek(db, u, seek_id)
+        flash(err or "Ayrıldın.", "err" if err else "ok")
+    finally:
+        db.close()
+    return redirect("/arkadas-ara")
+
+
+@app.route("/arkadas-ara/<int:seek_id>/iptal", methods=["POST"])
+def arkadas_ara_iptal(seek_id: int):
+    from activity_seek import cancel_seek
+
+    user = load_user()
+    if not user:
+        return redirect("/giris?next=/arkadas-ara")
+    db = SessionLocal()
+    try:
+        u = db.get(User, user.id)
+        if not u:
+            return redirect("/giris?next=/arkadas-ara")
+        err = cancel_seek(db, u, seek_id)
+        flash(err or "İlan kapatıldı.", "err" if err else "ok")
+    finally:
+        db.close()
+    return redirect("/arkadas-ara")
 
 
 @app.route("/bu-aksam")

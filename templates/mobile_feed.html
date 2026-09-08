@@ -23,6 +23,11 @@
   </header>
 
   {% if u %}
+  <a class="as-feed-promo" href="/arkadas-ara">
+    <span class="as-feed-promo-ico">🎾</span>
+    <span><b>Arkadaş / partner ara</b> — okey 4., tenis, halı saha…</span>
+    <span class="as-feed-promo-go">→</span>
+  </a>
   <form class="m-compose" method="post" action="/hesap/profil/post" enctype="multipart/form-data">
     <div class="m-compose-row">
       <div class="m-compose-av">{% if u.avatar_url %}<img src="{{ u.avatar_url }}" alt="{{ u.name }} profil fotoğrafı">{% else %}<span>{{ (u.name or 'U')[0]|upper }}</span>{% endif %}</div>
@@ -38,6 +43,11 @@
     </div>
   </form>
   {% else %}
+  <a class="as-feed-promo" href="/arkadas-ara">
+    <span class="as-feed-promo-ico">🎾</span>
+    <span><b>Arkadaş / partner ara</b> — okey, tenis, koşu…</span>
+    <span class="as-feed-promo-go">→</span>
+  </a>
   <div class="m-login-card">
     <p>Paylaşım yapmak için giriş yap.</p>
     <a class="m-btn-pri" href="/giris?next=/feed">Giriş yap</a>
