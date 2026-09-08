@@ -16,7 +16,7 @@ workflows:
         script: |
           cd mobile
           if [ ! -f ios/Runner.xcodeproj/project.pbxproj ]; then
-            flutter create . --org com.bursaapp --project-name bursaapp_mobile --platforms=ios,android
+            flutter create . --org com.bursaapp --project-name mobile --platforms=ios,android
           fi
           /usr/libexec/PlistBuddy -c "Add :NSLocationWhenInUseUsageDescription string 'Yakınındaki mekanları haritada göstermek için konum kullanılır.'" ios/Runner/Info.plist 2>/dev/null || \
           /usr/libexec/PlistBuddy -c "Set :NSLocationWhenInUseUsageDescription 'Yakınındaki mekanları haritada göstermek için konum kullanılır.'" ios/Runner/Info.plist
