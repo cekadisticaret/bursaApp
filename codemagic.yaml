@@ -28,9 +28,22 @@ workflows:
         script: keychain initialize
       - name: Fetch signing files
         script: |
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+          set -e
+          # Önce mevcut distribution sertifikalarını indir; private key eşleşirse kullanılır
+          app-store-connect certificates list --type IOS_DISTRIBUTION --save || true
+          if ! app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --create
+            --create \
+            --verbose; then
+            echo ""
+            echo "IMZA HATASI:"
+            echo "1) CERTIFICATE_PRIVATE_KEY mevcut 3 Distribution sertifikasından biriyle eşleşmiyor"
+            echo "2) Apple en fazla 3 Distribution sertifikasına izin verir (409 = kota dolu)"
+            echo ""
+            echo "Çözüm A: developer.apple.com → Certificates → kullanılmayan 1 Distribution sertifikasını Revoke → rebuild"
+            echo "Çözüm B: Mevcut sertifikaya ait private key'i CERTIFICATE_PRIVATE_KEY olarak Codemagic'e yapıştır"
+            exit 1
+          fi
       - name: Add certificates to keychain
         script: keychain add-certificates
       - name: Set up code signing
