@@ -1,0 +1,440 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Dashboard · BursaApp Admin{% endblock %}
+{% block body_class %}odin-admin{% endblock %}
+{% block header_title %}Dashboard{% endblock %}
+{% block head %}
+<link href="{{ url_for('static', filename='admin/css/bursaapp-dashboard.css') }}" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<div class="odin-dash">
+  <div class="odin-dash-head">
+    <div>
+      <h1>Merhaba{% if nav_user %}, {{ nav_user.name.split()[0] }}{% endif %}</h1>
+      <p>BursaApp yönetim özeti · trafik · girişler · moderasyon</p>
+    </div>
+    <nav class="odin-tabs" aria-label="Dashboard bölümleri">
+      <a class="on" href="#odin-overview">Özet</a>
+      <a href="#odin-logins">Girişler</a>
+      <a href="#odin-traffic">Trafik</a>
+      <a href="#odin-engage">Etkileşim</a>
+      <a href="#odin-moderation">Moderasyon</a>
+    </nav>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-xl-9">
+      <section class="odin-section" id="odin-overview">
+        <div class="odin-panel">
+          <div class="odin-panel-head">
+            <h2>Site trafiği</h2>
+            <div class="odin-legend">
+              <span><i style="background:#0f3d32"></i> Tekil ziyaretçi</span>
+              <span><i style="background:#c9b89a"></i> Sayfa görüntüleme</span>
+            </div>
+          </div>
+          <div class="odin-panel-body">
+            <div class="odin-panel-split">
+              <div class="odin-stat-rail">
+                <div class="odin-stat odin-stat--hero">
+                  <div class="odin-stat-label">Bugün tekil ziyaretçi</div>
+                  <div class="odin-stat-value">{{ kpi.today_visitors|default(0) }}</div>
+                  <div class="odin-stat-sub">Sayfa: {{ kpi.today_pageviews|default(0) }} · 7g: {{ kpi.d7_visitors|default(0) }}</div>
+                </div>
+                <div class="odin-stat">
+                  <div class="odin-stat-label">Toplam tekil</div>
+                  <div class="odin-stat-value">{{ kpi.total_visitors|default(0) }}</div>
+                  <div class="odin-stat-sub">Görüntüleme: {{ kpi.total_pageviews|default(0) }}</div>
+                </div>
+                <div class="odin-stat odin-stat--accent">
+                  <div class="odin-stat-label">Yayınlı yer</div>
+                  <div class="odin-stat-value">{{ kpi.places }}</div>
+                  <div class="odin-stat-sub">Üye {{ kpi.users }} · Yorum {{ kpi.reviews }}</div>
+                </div>
+              </div>
+              <div class="odin-chart-wrap">
+                <div id="ba-chart-traffic"></div>
+                {% if traffic and traffic.series %}
+                <table class="odin-traffic-daily" aria-label="Günlük trafik">
+                  <thead>
+                    <tr>
+                      <th>Gün</th>
+                      <th>Tekil ziyaretçi</th>
+                      <th>Sayfa görüntüleme</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for s in traffic.series %}
+                    <tr>
+                      <td>{{ s.day[8:10] }}.{{ s.day[5:7] }}</td>
+                      <td><b>{{ s.visitors }}</b></td>
+                      <td>{{ s.pageviews }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+                {% endif %}
+                <small class="text-muted d-block mt-2">Son {{ traffic.series|length if traffic and traffic.series else 14 }} gün · İstanbul · bot hariç · her satır o günün kendi sayısı</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="odin-section" id="odin-logins">
+        <div class="odin-panel">
+            <div class="odin-panel-head">
+            <h2>Günlük giriş</h2>
+            <div class="odin-legend">
+              <span><i style="background:#0f3d32"></i> Üye girişi · web + API</span>
+            </div>
+          </div>
+          <p class="odin-panel-note">Site trafiği değil — yalnızca <b>üye</b> girişi (admin/editör panel girişleri sayılmaz). Ziyaretçi trafiği üstteki grafikte.</p>
+          <div class="odin-panel-body">
+            <div class="odin-panel-split">
+              <div class="odin-stat-rail">
+                <div class="odin-stat odin-stat--hero">
+                  <div class="odin-stat-label">Bugün giriş</div>
+                  <div class="odin-stat-value">{{ kpi.logins_today|default(0) }}</div>
+                  <div class="odin-stat-sub">Dün: {{ kpi.logins_yesterday|default(0) }}{% if chart_data.logins.last_at %} · Son: {{ chart_data.logins.last_at }}{% endif %}</div>
+                </div>
+                <div class="odin-stat">
+                  <div class="odin-stat-label">Son 7 gün</div>
+                  <div class="odin-stat-value">{{ kpi.logins_7d|default(0) }}</div>
+                  <div class="odin-stat-sub">Kayıt 7g: {{ kpi.registers_7d|default(0) }}</div>
+                </div>
+                <div class="odin-stat">
+                  <div class="odin-stat-label">Son 14 gün</div>
+                  <div class="odin-stat-value">{{ kpi.logins_14d|default(0) }}</div>
+                  <a class="odin-btn mt-2" href="/admin/activity?kind=login">Giriş kayıtları →</a>
+                </div>
+              </div>
+              <div class="odin-chart-wrap">
+                <div id="ba-chart-logins"></div>
+              </div>
+            </div>
+          </div>
+          <div class="odin-table-wrap">
+            <table class="odin-table">
+              <thead><tr><th>Tarih</th><th>Gün</th><th class="text-end">Giriş</th></tr></thead>
+              <tbody>
+              {% for row in chart_data.logins.rows[:7] %}
+              <tr>
+                <td><b>{{ row.label }}</b>{% if loop.first %} <span class="odin-pill odin-pill-live">bugün</span>{% endif %}</td>
+                <td>{{ row.weekday }}</td>
+                <td class="text-end"><b>{{ row.count }}</b></td>
+              </tr>
+              {% else %}
+              <tr><td colspan="3" class="text-muted">Henüz giriş kaydı yok.</td></tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="odin-section" id="odin-traffic">
+        <div class="row g-3">
+          <div class="col-lg-5">
+            <div class="odin-panel h-100">
+              <div class="odin-panel-head"><h2>Kategori dağılımı</h2></div>
+              <div class="odin-panel-body pt-0"><div id="ba-chart-categories"></div></div>
+            </div>
+          </div>
+          <div class="col-lg-7">
+            <div class="odin-panel h-100">
+              <div class="odin-panel-head">
+                <h2>En çok gezilen sayfalar</h2>
+                {% if page_traffic %}<small>{{ page_traffic.since }} → {{ page_traffic.today }}</small>{% endif %}
+              </div>
+              <div class="odin-panel-body pt-0"><div id="ba-chart-top-pages"></div></div>
+            </div>
+          </div>
+        </div>
+        {% if page_traffic %}
+        <div class="odin-panel mt-3">
+          <div class="odin-toolbar">
+            <h2>Sayfa trafiği</h2>
+            <div class="odin-toolbar-actions">
+              <a class="odin-btn" href="/admin/seo">SEO paneli</a>
+            </div>
+          </div>
+          <div class="odin-table-wrap">
+            <table class="odin-table">
+              <thead><tr><th>Sayfa</th><th>Görüntüleme</th><th>Tekil</th></tr></thead>
+              <tbody>
+              {% for p in page_traffic.period_pages[:10] %}
+              <tr>
+                <td><b>{{ p.label }}</b><br><small class="text-muted"><code>{{ p.path }}</code></small></td>
+                <td><b>{{ p.pageviews }}</b></td>
+                <td>{{ p.visitors }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="3" class="text-muted">Henüz sayfa kaydı yok.</td></tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+        <div class="odin-panel mt-3">
+          <div class="odin-panel-head"><h2>Son 7 gün üye aktivitesi</h2><small>Kayıt · giriş · yer gönderimi</small></div>
+          <div class="odin-panel-body pt-0"><div id="ba-chart-activity"></div></div>
+        </div>
+      </section>
+
+      <section class="odin-section" id="odin-engage">
+        <div class="row g-3">
+          <div class="col-lg-4">
+            <div class="odin-panel h-100">
+              <div class="odin-panel-head"><h2>Kalma süresi</h2><small>Son 7 gün ortalama</small></div>
+              <div class="odin-panel-body">
+                <div class="odin-stat odin-stat--hero mb-3">
+                  <div class="odin-stat-label">Sayfa başına</div>
+                  <div class="odin-stat-value">{{ engagement.avg_page_seconds|default(0) }} sn</div>
+                  <div class="odin-stat-sub">Bugün: {{ engagement.today_avg_page_seconds|default(0) }} sn · {{ engagement.samples|default(0) }} ölçüm</div>
+                </div>
+                <div class="odin-stat">
+                  <div class="odin-stat-label">Oturum</div>
+                  <div class="odin-stat-value">{{ engagement.avg_session_seconds|default(0) }} sn</div>
+                  <div class="odin-stat-sub">{{ engagement.sessions|default(0) }} oturum · sekme kapanınca</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="odin-panel h-100">
+              <div class="odin-panel-head"><h2>Scroll derinliği</h2><small>Sayfa terk ölçümü</small></div>
+              <div class="odin-panel-body pt-0"><div id="ba-chart-scroll"></div></div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="odin-panel h-100">
+              <div class="odin-panel-head"><h2>Tıklama türleri</h2><small>Telefon · harita · gezinme</small></div>
+              <div class="odin-panel-body pt-0"><div id="ba-chart-clicks"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="row g-3 mt-1">
+          <div class="col-lg-6">
+            <div class="odin-panel h-100">
+              <div class="odin-panel-head"><h2>En çok tıklanan</h2>{% if click_stats %}<small>{{ click_stats.since }} → {{ click_stats.today }}</small>{% endif %}</div>
+              <div class="odin-table-wrap">
+                <table class="odin-table">
+                  <thead><tr><th>Tür</th><th>Hedef</th><th class="text-end">Tık</th></tr></thead>
+                  <tbody>
+                  {% for c in (click_stats.top or [])[:12] %}
+                  <tr>
+                    <td><code>{{ c.kind }}</code></td>
+                    <td><b>{{ c.label }}</b>{% if c.target and c.target != c.label %}<br><small class="text-muted">{{ c.target[:60] }}</small>{% endif %}</td>
+                    <td class="text-end"><b>{{ c.clicks }}</b></td>
+                  </tr>
+                  {% else %}
+                  <tr><td colspan="3" class="text-muted">Henüz tıklama kaydı yok — ziyaretçi trafiği geldikçe dolar.</td></tr>
+                  {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="odin-panel h-100">
+              <div class="odin-panel-head"><h2>Yer · telefon / harita</h2><small>İşletme sayfaları</small></div>
+              <div class="odin-table-wrap">
+                <table class="odin-table">
+                  <thead><tr><th>Yer</th><th>Tel</th><th>Harita</th><th>Web</th></tr></thead>
+                  <tbody>
+                  {% for p in (place_clicks or []) %}
+                  <tr>
+                    <td><b>{{ p.title }}</b><br><small class="text-muted"><a href="/yer/{{ p.slug }}" target="_blank">/yer/{{ p.slug }}</a></small></td>
+                    <td>{{ p.phone }}</td>
+                    <td>{{ p.maps }}</td>
+                    <td>{{ p.web }}</td>
+                  </tr>
+                  {% else %}
+                  <tr><td colspan="4" class="text-muted">Henüz yer tıklaması yok.</td></tr>
+                  {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="odin-panel mt-3">
+          <div class="odin-panel-head"><h2>Günlük ortalama süre</h2></div>
+          <div class="odin-panel-body pt-0"><div id="ba-chart-engage-time"></div></div>
+        </div>
+      </section>
+
+      <section class="odin-section" id="odin-moderation">
+        <div class="odin-panel">
+          <div class="odin-toolbar">
+            <h2>Onay bekleyen yerler</h2>
+            <div class="odin-toolbar-actions">
+              <a class="odin-btn" href="/admin?status=pending">Tüm kuyruk</a>
+              <a class="odin-btn odin-btn-dark" href="/admin/new">Yeni yer ekle</a>
+            </div>
+          </div>
+          <div class="odin-table-wrap">
+            <table class="odin-table">
+              <thead><tr><th>Başlık</th><th>Kategori</th><th>İlçe</th><th>Durum</th><th></th></tr></thead>
+              <tbody>
+              {% for p in pending %}
+              <tr>
+                <td><b>{{ p.title }}</b></td>
+                <td>{{ p.category }}</td>
+                <td>{{ p.ilce or '—' }}</td>
+                <td><span class="odin-pill odin-pill-warn">Bekliyor</span></td>
+                <td class="text-end">
+                  <a class="odin-btn" href="/admin/{{ p.id }}/edit">Düzenle</a>
+                  <form method="post" action="/admin/{{ p.id }}/approve" style="display:inline"><button class="odin-btn odin-btn-dark" type="submit">Onayla</button></form>
+                </td>
+              </tr>
+              {% else %}
+              <tr><td colspan="5" class="text-muted">Kuyruk boş — harika.</td></tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="row g-3 mt-1">
+          <div class="col-lg-6">
+            <div class="odin-panel">
+              <div class="odin-panel-head"><h2>Son kayıt olanlar</h2></div>
+              <div class="odin-table-wrap">
+                <table class="odin-table">
+                  <thead><tr><th>Ad</th><th>E-posta</th><th>Tarih</th></tr></thead>
+                  <tbody>
+                  {% for u in recent_users[:6] %}
+                  <tr><td><b>{{ u.name }}</b></td><td>{{ u.email }}</td><td>{{ u.created_at.strftime('%d.%m.%Y') if u.created_at else '—' }}</td></tr>
+                  {% else %}<tr><td colspan="3">Henüz üye yok</td></tr>{% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              <div class="p-3 pt-0"><a class="odin-btn" href="/admin/users">Tüm üyeler →</a></div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="odin-panel">
+              <div class="odin-panel-head"><h2>İçerik özeti</h2></div>
+              <div class="odin-panel-body">
+                <div class="odin-mini-grid">
+                  <div class="odin-mini"><b>{{ kpi.restaurants }}</b><span>Restoran</span></div>
+                  <div class="odin-mini"><b>{{ kpi.hospitals }}</b><span>Hastane</span></div>
+                  <div class="odin-mini"><b>{{ kpi.doctors }}</b><span>Doktor</span></div>
+                  <div class="odin-mini"><b>{{ kpi.dentists }}</b><span>Diş hekimi</span></div>
+                  <div class="odin-mini"><b>{{ kpi.vets }}</b><span>Veteriner</span></div>
+                  <div class="odin-mini"><b>{{ kpi.pharmacies }}</b><span>Nöbetçi eczane</span></div>
+                  <div class="odin-mini"><b>{{ kpi.hotels }}</b><span>Otel</span></div>
+                  <div class="odin-mini"><b>{{ kpi.events }}</b><span>Etkinlik</span></div>
+                  <div class="odin-mini"><b>{{ kpi.favorites }}</b><span>Favori</span></div>
+                  <div class="odin-mini"><b>{{ kpi.submits_7d }}</b><span>7g gönderim</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="col-xl-3 odin-sidebar">
+      {% if seo_status and seo_status.grade != 'iyi' %}
+      <div class="odin-alert odin-alert-dark">
+        <div class="odin-alert-ico">⚠️</div>
+        <div>
+          <b>SEO: {{ seo_status.grade|upper }}</b>
+          <p>{{ seo_status.ok_n }}/{{ seo_status.total }} kontrol · Google {% if seo_status.google_connected or seo_status.google_token_set %}bağlı{% else %}eksik{% endif %}</p>
+          <a href="/admin/seo">SEO paneline git →</a>
+        </div>
+      </div>
+      {% elif seo_status %}
+      <div class="odin-alert odin-alert-warn">
+        <div class="odin-alert-ico">✓</div>
+        <div>
+          <b>SEO durumu iyi</b>
+          <p>{{ seo_status.ok_n }}/{{ seo_status.total }} · sitemap {{ seo_status.sitemap_places }} yer</p>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if kpi.pending_places or pending_photos or pending_moderation %}
+      <div class="odin-alert odin-alert-warn">
+        <div class="odin-alert-ico">📋</div>
+        <div>
+          <b>Moderasyon bekliyor</b>
+          <p>Yer {{ kpi.pending_places }} · Foto {{ kpi.pending_photos|default(0) }} · Yorum/gönderi {{ pending_moderation|default(0) }}</p>
+          <a href="/admin?status=pending">Kuyruğu aç →</a>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="odin-panel">
+        <div class="odin-panel-body">
+          <div class="odin-feed-head">
+            <h3>Kuyruk dağılımı</h3>
+          </div>
+          <div id="ba-chart-moderation"></div>
+          <div class="d-flex flex-wrap gap-2 mt-2">
+            <a class="odin-btn" href="/admin/photos">Foto</a>
+            <a class="odin-btn" href="/admin/reviews">Yorum</a>
+            <a class="odin-btn" href="/admin/claims">Sahiplenme</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="odin-panel">
+        <div class="odin-panel-body">
+          <div class="odin-feed-head">
+            <h3>Aktiviteler</h3>
+            <a href="/admin/activity">Tümü</a>
+          </div>
+          <div class="odin-feed-group">
+            <small>YENİ</small>
+            {% for a in recent_activity[:4] %}
+            <div class="odin-feed-item">
+              <div class="odin-feed-av">{% if a.kind == 'login' %}🔑{% elif a.kind == 'register' %}👤{% else %}•{% endif %}</div>
+              <div class="odin-feed-copy">
+                <b>{{ a.title }}</b>
+                <small>{{ a.email or '—' }} · {{ a.created_at.strftime('%d.%m %H:%M') if a.created_at else '' }}</small>
+              </div>
+            </div>
+            {% else %}
+            <p class="text-muted small mb-0">Kayıt yok</p>
+            {% endfor %}
+          </div>
+          {% if recent_activity|length > 4 %}
+          <div class="odin-feed-group">
+            <small>SON KAYITLAR</small>
+            {% for a in recent_activity[4:8] %}
+            <div class="odin-feed-item">
+              <div class="odin-feed-av">•</div>
+              <div class="odin-feed-copy">
+                <b>{{ a.kind }}</b>
+                <small>{{ a.title }} · {{ a.created_at.strftime('%d.%m') if a.created_at else '' }}</small>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>window.__BA_DASHBOARD_CHARTS__ = {{ chart_data|tojson }};</script>
+<script src="{{ url_for('static', filename='admin/vendor/apexchart/apexchart.js') }}"></script>
+<script src="{{ url_for('static', filename='admin/js/dashboard/bursaapp-dashboard.js') }}"></script>
+<script>
+(function(){
+  var tabs = document.querySelectorAll('.odin-tabs a');
+  tabs.forEach(function(tab){
+    tab.addEventListener('click', function(){
+      tabs.forEach(function(t){ t.classList.remove('on'); });
+      tab.classList.add('on');
+    });
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+  <title>{% block title %}{{ seo.title_full if seo else 'BursaApp · Bursa rehberi' }}{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}{{ seo.description_clean if seo else 'Bursa şehir rehberi — restoran, konser, etkinlik.' }}{% endblock %}">
+  {% if seo and seo.keywords %}<meta name="keywords" content="{{ seo.keywords }}">{% endif %}
+  <meta name="robots" content="{{ seo.robots if seo else 'index, follow, max-snippet:-1, max-image-preview:large' }}">
+  <meta name="googlebot" content="{{ seo.robots if seo else 'index, follow, max-snippet:-1, max-image-preview:large' }}">
+  <link rel="canonical" href="{% block canonical %}{{ seo.canonical if seo else site_url ~ request.path }}{% endblock %}">
+  <link rel="alternate" type="text/plain" href="{{ site_url }}/llms.txt" title="BursaApp LLM site guide">
+  {% if seo and seo.hreflang %}
+  <link rel="alternate" hreflang="{{ seo.hreflang }}" href="{{ seo.canonical }}">
+  <link rel="alternate" hreflang="x-default" href="{{ seo.canonical }}">
+  {% endif %}
+  <meta property="og:site_name" content="BursaApp">
+  <meta property="og:locale" content="tr_TR">
+  <meta property="og:type" content="{{ seo.og_type if seo else 'website' }}">
+  <meta property="og:title" content="{% block og_title %}{{ seo.title_full if seo else 'BursaApp' }}{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}{{ seo.description_clean if seo else 'Bursa şehir rehberi' }}{% endblock %}">
+  <meta property="og:url" content="{% block og_url %}{{ seo.canonical if seo else site_url ~ request.path }}{% endblock %}">
+  <meta property="og:image" content="{% block og_image %}{{ seo.image_abs if seo else site_url ~ '/static/og-bursa.jpg' }}{% endblock %}">
+  <meta property="og:image:width" content="{{ seo.image_w if seo else 1200 }}">
+  <meta property="og:image:height" content="{{ seo.image_h if seo else 630 }}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{% block tw_title %}{{ seo.title_full if seo else 'BursaApp' }}{% endblock %}">
+  <meta name="twitter:description" content="{% block tw_description %}{{ seo.description_clean if seo else 'Bursa şehir rehberi' }}{% endblock %}">
+  <meta name="twitter:image" content="{% block tw_image %}{{ seo.image_abs if seo else site_url ~ '/static/og-bursa.jpg' }}{% endblock %}">
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16.png') }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
+  <meta name="theme-color" content="#DCE8DC">
+  <meta name="application-name" content="BursaApp">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BursaApp">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="author" content="BursaApp">
+  {% if google_site_verification %}
+  <meta name="google-site-verification" content="{{ google_site_verification }}">
+  {% endif %}
+  {% if ga_measurement_id or google_ads_id %}
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_measurement_id or google_ads_id }}"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    {% if ga_measurement_id %}gtag('config', '{{ ga_measurement_id }}');{% endif %}
+    {% if google_ads_id %}gtag('config', '{{ google_ads_id }}');{% endif %}
+  </script>
+  {% endif %}
+  {% if seo %}
+  {% for block in seo.to_json_ld_scripts() %}
+  <script type="application/ld+json">{{ block|safe }}</script>
+  {% endfor %}
+  {% endif %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v={{ static_v }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='seo-pages.css') }}?v={{ static_v }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mobile-travel.css') }}?v={{ static_v }}">
+  {% block head %}{% endblock %}
+</head>
+<body class="is-mobile-app m-app-shell{% if nav=='hesap' %} is-feed{% endif %}{% block body_class %}{% endblock %}"{% block body_attrs %}{% endblock %}>
+<header class="m-top" aria-label="Üst bar">
+  <a class="m-top-user" href="{% if nav_user %}/hesap{% else %}/giris{% endif %}" rel="nofollow">
+    <span class="m-top-av">{% if nav_user and nav_user.avatar_url %}<img src="{{ nav_user.avatar_url }}" alt="{{ nav_user.name }} profil fotoğrafı">{% elif nav_user %}<span>{{ nav_user.name[0]|upper }}</span>{% else %}<span>👋</span>{% endif %}</span>
+    <span class="m-top-txt">
+      <small>{% if nav_user %}Hoş geldin{% else %}Merhaba{% endif %}</small>
+      <b>{% if nav_user %}{{ nav_user.name.split()[0] }}{% else %}BursaApp{% endif %}</b>
+    </span>
+  </a>
+  <div class="m-top-actions">
+    <a class="m-icon-btn" href="/kategoriler" aria-label="Ara">🔍</a>
+    <a class="m-icon-btn" href="{% if nav_user %}/hesap/bildirimler{% else %}/giris{% endif %}" aria-label="Bildirimler" rel="nofollow">🔔</a>
+  </div>
+</header>
+<div class="wa-wrap">
+  <header class="wa-top">
+    <a class="wa-brand" href="/">
+      <img src="{{ url_for('static', filename='logo-192.png') }}" alt="BursaApp">
+      <div>
+        <b>BursaApp</b>
+        <span>Keşfet. Yaşa. Hatırla.</span>
+      </div>
+    </a>
+    <div class="wa-top-actions">
+      <a class="wa-bell" href="/hesap/bildirimler" title="Bildirimler" aria-label="Bildirimler" rel="nofollow">🔔</a>
+      {% if can_admin_panel %}
+      <a class="wa-btn wa-btn-ghost wa-admin-btn" href="/admin/dashboard" rel="nofollow">Admin</a>
+      {% endif %}
+      {% if nav_user %}
+      <a class="wa-user-chip" href="/hesap/profil" rel="nofollow" title="{{ nav_user.name }}">
+        <span class="wa-user-chip-av">
+          {% if nav_user.avatar_url %}
+          <img src="{{ nav_user.avatar_url }}" alt="{{ nav_user.name }} profil fotoğrafı">
+          {% else %}
+          <span>{{ nav_user.name[0]|upper }}</span>
+          {% endif %}
+        </span>
+        <span class="wa-user-chip-name">{{ nav_user.name.split()[0] }}</span>
+      </a>
+      <a class="wa-btn wa-btn-ghost" href="/cikis" title="Çıkış" aria-label="Çıkış yap" rel="nofollow">Çıkış</a>
+      {% else %}
+      <a class="wa-btn wa-btn-forest" href="/giris" rel="nofollow"><span>Giriş</span></a>
+      {% endif %}
+    </div>
+  </header>
+
+  <nav class="wa-nav wa-nav-desktop" aria-label="Ana menü">
+    <div class="wa-nav-main">
+    <a class="{{ 'on' if nav=='kesfet' else '' }}" href="/">🏠 Keşfet</a>
+    <a class="{{ 'on' if nav=='visit' else '' }}" href="/gezilecek">🌿 Gezilecek</a>
+    <a class="{{ 'on' if nav=='teleferik' else '' }}" href="/uludag-teleferik">🚡 Teleferik</a>
+    <a class="{{ 'on' if nav=='food' else '' }}" href="/yeme-icme">🍽 Yeme-içme</a>
+    <a class="{{ 'on' if nav=='market' else '' }}" href="/marketler">🛒 Marketler</a>
+    <a class="{{ 'on' if nav in ('hospital','doctor','dentist','vet','pharmacy','school') else '' }}" href="/hastaneler">🏨 Sağlık</a>
+    <a class="{{ 'on' if nav in ('concert','event','theater') else '' }}" href="/konserler">🎵 Etkinlik</a>
+    <a class="{{ 'on' if nav=='blog' else '' }}" href="/blog">✍️ Blog</a>
+    <a class="{{ 'on' if nav=='news' else '' }}" href="/haberler">📰 Haberler</a>
+    <a class="{{ 'on' if nav=='bursaspor' else '' }}" href="/bursaspor">🟢 Bursaspor</a>
+    </div>
+    <details class="wa-nav-more">
+      <summary>⋯ Daha fazla</summary>
+      <div class="wa-nav-drop">
+        <a href="/hastaneler">Hastaneler</a>
+        <a href="/doktorlar">Doktorlar</a>
+        <a href="/dis-hekimleri">Diş hekimleri</a>
+        <a href="/nobetci-eczaneler"><b>Nöbetçi eczaneler</b></a>
+        <a href="/faturalar"><b>Su · elektrik · gaz</b></a>
+        <a href="/uludag-teleferik">Uludağ Teleferik</a>
+        <a href="/veterinerler">Veterinerler</a>
+        <a href="/okullar"><b>Okullar</b></a>
+        <a href="/oteller">Oteller</a>
+        <a href="/kamp">Kamp</a>
+        <a href="/alisveris">Alışveriş</a>
+        <a href="/spor">Spor</a>
+        <a href="/aile">Aile</a>
+        <a href="/album">Albüm</a>
+        <a href="/sinema">Sinema</a>
+        <a href="/tiyatro">Tiyatro</a>
+        <a href="/eglence">Eğlence</a>
+        <a href="/etkinlikler">Etkinlikler</a>
+        <a href="/organizasyonlar">Organizasyonlar</a>
+        <a href="/blog"><b>Blog</b></a>
+        <a href="/haberler"><b>Haberler</b></a>
+        <a href="/bursaspor">Bursaspor</a>
+        <a href="/iletisim">İletişim</a>
+        <a href="/ilce">İlçeler</a>
+        <a href="/harita">Harita</a>
+        <a href="/rota">Rota</a>
+        <a href="/ai">AI</a>
+        <a href="/#kategoriler">Tüm kategoriler</a>
+      </div>
+    </details>
+  </nav>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flashes">
+      {% for cat, msg in messages %}
+      <p class="flash {{ cat }}">{{ msg }}</p>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+
+  {% if email_verify_banner %}
+  <div class="verify-banner" role="alert">
+    <div class="verify-banner-inner">
+      <strong>E-posta onayın eksik.</strong>
+      Mailindeki linke bas — aksi halde
+      {% if email_verify_banner.days_left > 0 %}
+        <b>{{ email_verify_banner.days_left }} gün</b> içinde
+      {% else %}
+        <b>bugün</b>
+      {% endif %}
+      üyeliğin iptal edilir.
+      <form method="post" action="/hesap/ayarlar" class="verify-banner-form">
+        <input type="hidden" name="action" value="resend_verify">
+        <button type="submit">Onay mailini gönder</button>
+      </form>
+      <a href="/hesap/ayarlar">Ayarlar</a>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if seo and seo.breadcrumbs and seo.breadcrumbs|length > 1 %}
+  <nav class="crumbs" aria-label="Breadcrumb">
+    {% for name, path in seo.breadcrumbs %}
+      {% if not loop.last %}
+      <a href="{{ path }}">{{ name }}</a><span class="crumbs-sep" aria-hidden="true">/</span>
+      {% else %}
+      <span aria-current="page">{{ name }}</span>
+      {% endif %}
+    {% endfor %}
+  </nav>
+  {% endif %}
+
+  {% block page_head %}
+  {% if request.path != '/' %}
+  <div class="page-head">
+    <h1>{% block hello %}{% endblock %}</h1>
+    <p>{% block sub %}{% endblock %}</p>
+  </div>
+  {% endif %}
+  {% endblock %}
+
+  {% block main %}{% endblock %}
+</div>
+
+<footer class="seo-foot">
+  <div class="seo-foot-inner">
+    <nav aria-label="Dikeyler">
+      <a href="/yeme-icme">Yeme-içme</a>
+      <a href="/gezilecek">Gezilecek</a>
+      <a href="/uludag-teleferik">Uludağ Teleferik</a>
+      <a href="/oteller">Oteller</a>
+      <a href="/blog">Blog</a>
+      <a href="/#nasil">Nasıl</a>
+    </nav>
+    <div class="meta">
+      <a href="/kvkk">KVKK</a>
+      <a href="/iletisim">İletişim</a>
+      <span>Ücretsiz rehber · rezervasyon yok</span>
+    </div>
+  </div>
+</footer>
+
+<nav class="m-tabbar" aria-label="Ana menü">
+  <a class="m-tab {{ 'on' if mobile_tab=='home' else '' }}" href="/">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+    <span>Ana</span>
+  </a>
+  <a class="m-tab {{ 'on' if mobile_tab=='explore' else '' }}" href="/kategoriler">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+    <span>Keşfet</span>
+  </a>
+  <a class="m-tab m-tab-fab {{ 'on' if mobile_tab=='route' else '' }}" href="/rota" title="Rota planla" aria-label="Rota planla">
+    <span>🧳</span>
+  </a>
+  <a class="m-tab {{ 'on' if mobile_tab=='feed' else '' }}" href="/feed">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11h16M4 6h16M4 16h10"/></svg>
+    <span>Akış</span>
+  </a>
+  <a class="m-tab {{ 'on' if mobile_tab=='profile' else '' }}" href="{% if nav_user %}/hesap{% else %}/giris?next=/hesap{% endif %}" rel="nofollow">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0112 0v1"/></svg>
+    <span>Profil</span>
+  </a>
+</nav>
+
+<nav class="wa-bottom wa-bottom-legacy" aria-hidden="true">
+  <a class="{{ 'on' if nav=='kesfet' else '' }}" href="/">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+    Ana
+  </a>
+  <a class="{{ 'on' if nav in ('visit','food','yakin','market','hospital','doctor','vet','pharmacy','camp','hotel') else '' }}" href="/#kategoriler">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+    Keşfet
+  </a>
+  <a class="center" href="/rota" title="Rota" aria-label="Rota">
+    <span>🧳</span>
+  </a>
+  <a class="{{ 'on' if request.path.startswith('/hesap/favoriler') else '' }}" href="{% if nav_user %}/hesap/favoriler{% else %}/giris{% endif %}" rel="nofollow">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-7-10a4 4 0 017-2 4 4 0 017 2c0 5.5-7 10-7 10z"/></svg>
+    Kayıtlı
+  </a>
+  <a class="{{ 'on' if nav=='hesap' or request.path.startswith('/hesap/profil') else '' }}" href="{% if nav_user %}/hesap/profil{% else %}/giris{% endif %}" rel="nofollow">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0112 0v1"/></svg>
+    Profil
+  </a>
+</nav>
+
+<script src="{{ url_for('static', filename='analytics.js') }}?v={{ static_v }}" defer></script>
+</body>
+</html>

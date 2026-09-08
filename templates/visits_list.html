@@ -1,0 +1,140 @@
+{% extends "_shell.html" %}
+{% block body_class %} visit-browse food-browse{% endblock %}
+{% block page_head %}{% endblock %}
+{% block main %}
+<div class="food-top" id="liste">
+  <div>
+    <h1>{{ seo_vertical.h1 if seo_vertical else 'Bursa Gezilecek Yerler' }}</h1>
+    {% include "_seo_vertical_intro.html" %}
+  </div>
+  <a class="food-map-btn" href="/harita?cat=visit">Harita</a>
+</div>
+
+<form class="food-search" method="get" action="/gezilecek" role="search">
+  <label class="visually-hidden" for="visit-q">Gezilecek yer ara</label>
+  <input id="visit-q" name="q" value="{{ q|default('') }}" placeholder="Yer, müze, köy, ilçe ara…" autocomplete="off" enterkeyhint="search">
+  {% for k in kinds_on %}<input type="hidden" name="kind" value="{{ k }}">{% endfor %}
+  {% for k in fees_on %}<input type="hidden" name="fee" value="{{ k }}">{% endfor %}
+  {% for k in tags_on %}<input type="hidden" name="tag" value="{{ k }}">{% endfor %}
+  {% if ilce %}<input type="hidden" name="ilce" value="{{ ilce }}">{% endif %}
+  {% if sub %}<input type="hidden" name="sub" value="{{ sub }}">{% endif %}
+  {% if sort and sort != 'featured' %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+  <button type="submit" class="food-search-btn">Ara</button>
+  {% if q %}<a class="food-search-clear" href="{{ visit_href(q='', page='') }}" title="Aramayı temizle" aria-label="Aramayı temizle">×</a>{% endif %}
+</form>
+
+<div class="food-browse-grid">
+  <aside class="food-side">
+    <details class="food-filter-panel" open>
+      <summary>Filtreler</summary>
+      <div class="food-filters">
+        <details class="ff-fold"{% if kinds_on %} open{% endif %}>
+          <summary>Türler{% if kinds_on %}<span class="ff-fold-n">{{ kinds_on|length }}</span>{% endif %}</summary>
+          <div class="ff-fold-body">
+          {% for k, lab, _s in visit_kind %}
+          <a class="food-ff {{ 'on' if k in kinds_on else '' }}" href="{{ visit_href(toggle=('kind', k)) }}">{{ lab }}</a>
+          {% endfor %}
+          </div>
+        </details>
+        <details class="ff-fold"{% if fees_on %} open{% endif %}>
+          <summary>Giriş{% if fees_on %}<span class="ff-fold-n">{{ fees_on|length }}</span>{% endif %}</summary>
+          <div class="ff-fold-body">
+          {% for k, lab in visit_fee %}
+          <a class="food-ff {{ 'on' if k in fees_on else '' }}" href="{{ visit_href(toggle=('fee', k)) }}">{{ lab }}</a>
+          {% endfor %}
+          </div>
+        </details>
+        <details class="ff-fold"{% if tags_on %} open{% endif %}>
+          <summary>Öne çıkan{% if tags_on %}<span class="ff-fold-n">{{ tags_on|length }}</span>{% endif %}</summary>
+          <div class="ff-fold-body">
+          {% for k, lab in visit_tag %}
+          <a class="food-ff {{ 'on' if k in tags_on else '' }}" href="{{ visit_href(toggle=('tag', k)) }}">{{ lab }}</a>
+          {% endfor %}
+          </div>
+        </details>
+        <details class="ff-fold"{% if ilce %} open{% endif %}>
+          <summary>Bölge{% if ilce %}<span class="ff-fold-n">1</span>{% endif %}</summary>
+          <div class="ff-fold-body">
+          <a class="food-ff {{ 'on' if not ilce else '' }}" href="{{ visit_href(ilce='') }}">Tüm ilçeler</a>
+          {% for ad in ilceler %}
+          <a class="food-ff {{ 'on' if ilce==ad else '' }}" href="{{ visit_href(ilce=ad) }}">{{ ad }}</a>
+          {% endfor %}
+          </div>
+        </details>
+        {% if kinds_on or fees_on or tags_on or ilce or q %}
+        <a class="ff-clear" href="/gezilecek">Filtreleri temizle</a>
+        {% endif %}
+      </div>
+    </details>
+  </aside>
+
+  <div class="food-main">
+    <div class="food-toolbar">
+      <span>{{ total }} sonuç{% if q %} · “{{ q }}”{% endif %}</span>
+      <label>Sırala
+        <select onchange="if(this.value) location.href=this.value">
+          <option value="{{ visit_href(sort='featured', page='') }}" {% if sort=='featured' %}selected{% endif %}>Öne çıkanlar</option>
+          <option value="{{ visit_href(sort='rating', page='') }}" {% if sort=='rating' %}selected{% endif %}>Puana göre</option>
+          <option value="{{ visit_href(sort='name', page='') }}" {% if sort=='name' %}selected{% endif %}>Ada göre</option>
+        </select>
+      </label>
+    </div>
+
+    {% if places %}
+    <div class="food-hits">
+      {% for p in places %}
+      <article class="food-hit">
+        <a class="food-hit-photo" href="{{ p.path or ('/yer/' ~ p.slug) }}">
+          {% if p.img_url %}<img src="{{ p.img_url }}" alt="{{ p.title }}" loading="lazy">{% else %}<div class="ph">🌿</div>{% endif %}
+          {% if p.gallery and p.gallery|length > 1 %}
+          <span class="food-hit-dots" aria-hidden="true">{% for g in p.gallery %}<i{% if loop.first %} class="on"{% endif %}></i>{% endfor %}</span>
+          {% endif %}
+        </a>
+        <div class="food-hit-body">
+          <h2><a href="{{ p.path or ('/yer/' ~ p.slug) }}">{{ p.rank }}. {{ p.title }}</a></h2>
+          {% if p.rating %}
+          <div class="food-hit-rate">
+            <b>{{ '%.1f'|format(p.rating) }}</b>
+            <span class="food-bubbles" title="{{ p.rating }}">
+              {% for i in range(5) %}
+              <i class="{% if p.rating >= i+0.8 %}full{% elif p.rating >= i+0.3 %}half{% endif %}"></i>
+              {% endfor %}
+            </span>
+            {% if p.rating_count %}<small>({{ p.rating_count }} yorum)</small>{% else %}<small>liste puanı</small>{% endif %}
+          </div>
+          {% endif %}
+          <p class="food-hit-meta">
+            {{ p.subcategory_label or 'Gezilecek yer' }}
+            · {{ p.fee_label }}
+            {% if p.ilce %} · {{ p.ilce }}{% endif %}
+            {% if p.hours_text %} · {{ p.hours_text }}{% endif %}
+          </p>
+          {% if p.blurb %}<p class="food-hit-snip">“{{ p.blurb[:140] }}{% if p.blurb|length > 140 %}…{% endif %}”</p>{% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% if pages > 1 %}
+    <nav class="food-pages" aria-label="Sayfalar">
+      {% if page > 1 %}<a href="{{ visit_href(page=page-1) }}">←</a>{% endif %}
+      {% for n in range(1, pages+1) %}
+        {% if n == page %}<span class="on">{{ n }}</span>
+        {% elif n <= 3 or n > pages-2 or (n >= page-1 and n <= page+1) %}
+        <a href="{{ visit_href(page=n) }}">{{ n }}</a>
+        {% elif n == 4 or n == pages-2 %}<span class="gap">…</span>
+        {% endif %}
+      {% endfor %}
+      {% if page < pages %}<a href="{{ visit_href(page=page+1) }}">→</a>{% endif %}
+    </nav>
+    {% endif %}
+    {% else %}
+    <div class="empty-box">
+      <p>{% if q %}“{{ q }}” için sonuç yok.{% else %}Bu filtrelere uyan gezilecek yer yok.{% endif %}</p>
+      <p><a href="/gezilecek">Filtreleri temizle</a></p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% include "_seo_vertical_after.html" %}
+{% include "_browse_filter_script.html" %}
+{% endblock %}

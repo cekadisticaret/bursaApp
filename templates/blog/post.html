@@ -1,0 +1,37 @@
+{% extends "_shell.html" %}
+{% block page_head %}{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='seo-pages.css') }}?v={{ static_v }}">
+{% endblock %}
+{% block main %}
+<article class="seo-page">
+  <p class="blog-meta">
+    {% if post.kind and blog_kinds.get(post.kind) %}<span class="blog-chip">{{ blog_kinds[post.kind] }}</span>{% endif %}
+    {% if post.date %}<time datetime="{{ post.date }}">{{ post.date }}</time>{% endif %}
+  </p>
+  <h1>{{ post.h1 }}</h1>
+  <p class="lead">{{ post.desc }}</p>
+  <img class="hero-pic" src="{{ post.image }}" alt="{{ post.h1 }}" width="1200" height="675" fetchpriority="high">
+  {% for sec in post.sections %}
+  <h2>{{ sec.h2 }}</h2>
+  {% if sec.image %}
+  <img class="sec-pic" src="{{ sec.image }}" alt="{{ sec.h2 }}" width="960" height="540" loading="lazy">
+  {% endif %}
+  {% for para in sec.paras %}
+  <p>{{ para|safe }}</p>
+  {% endfor %}
+  {% endfor %}
+  {% if post.related %}
+  <p class="blog-related">Kardeş yazılar:
+    {% for rslug, rlab in post.related %}
+    <a href="/blog/{{ rslug }}">{{ rlab }}</a>{% if not loop.last %} · {% endif %}
+    {% endfor %}
+  </p>
+  {% endif %}
+  <div class="seo-cta">
+    <a class="pri" href="{{ post.cta_path }}">{{ post.cta_label }}</a>
+    <a class="ghost" href="/blog">Tüm yazılar</a>
+    <a class="ghost" href="https://wa.me/905535469948" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+  </div>
+</article>
+{% endblock %}

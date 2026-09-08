@@ -1,0 +1,127 @@
+.seo-landing{margin:0 0 22px}
+.seo-landing .seo-lead{margin:8px 0 14px;color:#4a5c54;line-height:1.55;max-width:62ch}
+.seo-cta{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 18px}
+.seo-cta a{
+  display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:11px 18px;
+  font-weight:700;font-size:14px;text-decoration:none;
+}
+.seo-cta .pri{background:#E8782E;color:#fff}
+.seo-cta .pri:hover{background:#D4651C}
+.seo-cta .ghost{background:#E8F2EA;color:#1B3B2B}
+.seo-block{margin:28px 0}
+.seo-block h2{margin:0 0 10px;font-size:1.25rem}
+.seo-block ul{margin:0;padding:0 0 0 1.15em;line-height:1.65;color:#4a5c54}
+.seo-cross{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.seo-cross a{
+  border-radius:999px;padding:8px 14px;background:#F6F3EC;color:#1B3B2B;
+  font-weight:700;font-size:13px;text-decoration:none;border:1px solid rgba(27,59,43,.08);
+}
+.seo-cross a:hover{background:#E8F2EA}
+.seo-faq details{border-top:1px solid rgba(27,59,43,.08);padding:10px 0}
+.seo-faq details:last-child{border-bottom:1px solid rgba(27,59,43,.08)}
+.seo-faq summary{cursor:pointer;font-weight:700}
+.seo-faq p{margin:8px 0 0;color:#4a5c54;line-height:1.55}
+
+.seo-page{width:min(760px,100%);margin:0 auto;padding:8px 0 48px}
+.seo-page h1{font-size:clamp(28px,4vw,40px);line-height:1.15;letter-spacing:-.6px;margin:0 0 12px}
+.seo-page .lead{color:#4a5c54;line-height:1.6;margin:0 0 20px}
+.seo-page article p,.seo-page article li{line-height:1.7;color:#2a3a33}
+.seo-page article h2{margin:28px 0 10px;font-size:1.2rem}
+.seo-page .hero-pic{width:100%;border-radius:16px;margin:0 0 22px;aspect-ratio:16/9;object-fit:cover}
+.seo-page .sec-pic{width:100%;border-radius:14px;margin:8px 0 16px;aspect-ratio:16/9;object-fit:cover;box-shadow:var(--shadow)}
+.seo-posts{display:grid;gap:14px}
+.seo-posts a{
+  display:grid;grid-template-columns:120px 1fr;gap:14px;padding:12px;
+  background:#fff;border-radius:14px;text-decoration:none;color:inherit;
+  border:1px solid rgba(27,59,43,.08);
+}
+.seo-posts img{width:120px;height:90px;object-fit:cover;border-radius:10px}
+.seo-posts b{display:block;margin-bottom:4px;line-height:1.35}
+.seo-posts i{font-style:normal;color:#6B7A72;font-size:13px;display:block;margin-top:4px;line-height:1.45}
+.seo-posts time{font-size:12px;color:#8a9690;margin-top:6px;display:block}
+
+/* Blog indeks — 2 sütun kart */
+.seo-page--blog{width:min(980px,100%)}
+.seo-page--blog .seo-posts{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+}
+.seo-page--blog .seo-posts a{
+  grid-template-columns:1fr;
+  gap:0;padding:0;overflow:hidden;
+  transition:box-shadow .15s ease,transform .15s ease;
+}
+.seo-page--blog .seo-posts a:hover{
+  box-shadow:0 8px 24px rgba(27,59,43,.1);
+  transform:translateY(-1px);
+}
+.seo-page--blog .seo-posts img{
+  width:100%;height:168px;border-radius:0;
+}
+.seo-page--blog .seo-posts a > div{padding:14px 16px 16px}
+
+.blog-filters{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+.blog-filters a{
+  display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:8px 14px;
+  background:#F6F3EC;color:#1B3B2B;font-weight:700;font-size:13px;text-decoration:none;
+  border:1px solid rgba(27,59,43,.08);
+}
+.blog-filters a.on{background:#1B3B2B;color:#fff}
+.blog-filters a span{font-weight:600;opacity:.75;font-size:12px}
+.blog-filters a.on span{opacity:.9}
+
+.blog-chip{
+  display:inline-block;border-radius:999px;padding:3px 10px;margin:0 0 8px;
+  background:#E8F2EA;color:#1B3B2B;font-size:11px;font-weight:800;letter-spacing:.02em;
+}
+.seo-posts .blog-chip{margin-bottom:6px}
+.blog-meta{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 8px}
+.blog-meta time{font-size:13px;color:#6B7A72}
+.blog-related{margin:20px 0 0;line-height:1.7;color:#4a5c54}
+.blog-related a{font-weight:700}
+
+.seo-foot{
+  background:#1B3B2B;color:#E8F2EA;padding:28px 22px 96px;margin-top:28px;
+}
+.seo-foot-inner{width:min(1100px,100%);margin:0 auto}
+.seo-foot nav{display:flex;flex-wrap:wrap;gap:10px 16px;margin-bottom:14px}
+.seo-foot a{color:#E8F2EA;font-weight:700;font-size:14px;text-decoration:none}
+.seo-foot a:hover{color:#E8782E}
+.seo-foot .meta{font-size:13px;opacity:.8;display:flex;flex-wrap:wrap;gap:12px}
+
+@media (max-width:640px){
+  .seo-posts a{grid-template-columns:1fr}
+  .seo-posts img{width:100%;height:160px}
+  .seo-page--blog .seo-posts{grid-template-columns:1fr}
+}
+
+.contact-cards{display:grid;gap:14px;margin:24px 0 20px;max-width:480px}
+.contact-card{
+  display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;
+  padding:18px 20px;background:#fff;border-radius:16px;text-decoration:none;color:inherit;
+  border:1px solid rgba(27,59,43,.1);box-shadow:0 4px 18px rgba(27,59,43,.06);
+  transition:transform .15s ease,box-shadow .15s ease;
+}
+.contact-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(27,59,43,.1)}
+.contact-card.contact-wa{border-color:rgba(37,211,102,.25);background:linear-gradient(135deg,#f0fdf4 0%,#fff 100%)}
+.contact-ico{font-size:28px;line-height:1}
+.contact-card b{display:block;font-size:15px;margin-bottom:2px}
+.contact-card i{font-style:normal;font-size:14px;color:#6B7A72;font-weight:600}
+.contact-go{font-size:13px;font-weight:800;color:#1B3B2B;white-space:nowrap}
+.contact-card.contact-wa .contact-go{color:#15803d}
+.contact-note{font-size:14px;color:#6B7A72;line-height:1.6;max-width:56ch;margin:0 0 24px}
+
+.err404 .err404-code{
+  margin:0 0 8px;font-size:clamp(48px,12vw,72px);font-weight:900;letter-spacing:-.08em;
+  color:rgba(27,59,43,.12);line-height:1;
+}
+.err404-search{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:18px 0 8px;max-width:520px}
+.err404-search .field{flex:1;min-width:180px}
+.err404-search label{display:block;font-size:12px;font-weight:700;margin-bottom:4px;color:#4a5c54}
+.err404-search input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(27,59,43,.12)}
+
+.tesekkur .tks-icon{
+  width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:#E8F2EA;color:#1B3B2B;font-size:28px;font-weight:900;margin:0 0 14px;
+}
+.tesekkur .tks-hint{margin:16px 0 0;font-size:14px;color:#6B7A72;line-height:1.55}
