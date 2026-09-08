@@ -103,12 +103,41 @@
   var clearSelection = function () {};
 
   var routeStyle = {
-    color: "#2563eb",
+    color: "#1B3B2B",
     weight: 4,
-    opacity: 0.78,
+    opacity: 0.88,
     lineJoin: "round",
     lineCap: "round",
   };
+
+  function mapPadForDetail() {
+    var pad = { top: 48, right: 48, bottom: 48, left: 48 };
+    if (!isMobile) return pad;
+    var detailEl = document.getElementById("nx-detail");
+    var sheetH = 0;
+    if (detailEl && !detailEl.classList.contains("is-empty")) {
+      sheetH = detailEl.getBoundingClientRect().height || 0;
+    }
+    pad.bottom = Math.max(pad.bottom, Math.round(sheetH + 72));
+    return pad;
+  }
+
+  function focusMapOnPlace(lat, lng) {
+    if (!map || lat == null || lng == null) return;
+    var pad = mapPadForDetail();
+    try {
+      var llb = L.latLngBounds([center, [lat, lng]]);
+      map.fitBounds(llb, {
+        paddingTopLeft: L.point(pad.left, pad.top),
+        paddingBottomRight: L.point(pad.right, pad.bottom),
+        maxZoom: 16,
+        animate: true,
+        duration: 0.35,
+      });
+    } catch (e) {
+      map.panTo([lat, lng], { animate: true, duration: 0.35 });
+    }
+  }
 
   function drawStraightRoute(destLat, destLng) {
     L.polyline([center, [destLat, destLng]], Object.assign({}, routeStyle, {
@@ -368,8 +397,6 @@
     if (detailRail) detailRail.classList.toggle("is-empty", !show);
     if (detailEmpty) detailEmpty.hidden = show;
     if (detailPanel) detailPanel.hidden = !show;
-    if (stageEl) stageEl.classList.toggle("has-detail", show && isMobile);
-    if (show && isMobile) scheduleMapResize();
   }
 
   function clearSelection() {
@@ -473,14 +500,9 @@
       detailLink.href = p.path || (p.slug ? "/yer/" + p.slug : "#");
     }
 
-    if (p.lat != null && p.lng != null) {
-      map.panTo([p.lat, p.lng], { animate: true, duration: 0.4 });
-      if (isMobile) {
-        setTimeout(function () {
-          map.panBy([0, 90], { animate: true });
-        }, 120);
-      }
-    }
+    requestAnimationFrame(function () {
+      focusMapOnPlace(p.lat, p.lng);
+    });
   }
 
   listButtons.forEach(function (btn) {

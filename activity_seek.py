@@ -6,6 +6,12 @@ from datetime import datetime, timedelta
 from content_filter import filter_profanity, profanity_ok
 from feed_social import _ago
 from models import ActivitySeek, ActivitySeekJoin, User
+from user_points import award_activity_join_approved, user_points
+
+JOIN_PENDING = "pending"
+JOIN_JOINED = "joined"
+JOIN_LEFT = "left"
+JOIN_REJECTED = "rejected"
 
 ACTIVITY_TYPES: dict[str, dict[str, str]] = {
     "okey": {"label": "Okey", "emoji": "🀄", "default_title": "4. oyuncu arıyorum"},
@@ -15,6 +21,7 @@ ACTIVITY_TYPES: dict[str, dict[str, str]] = {
     "basketball": {"label": "Basketbol", "emoji": "🏀", "default_title": "Basketbol arkadaşı arıyorum"},
     "running": {"label": "Koşu", "emoji": "🏃", "default_title": "Koşu arkadaşı arıyorum"},
     "hiking": {"label": "Yürüyüş", "emoji": "🥾", "default_title": "Yürüyüş arkadaşı arıyorum"},
+    "visit": {"label": "Birlikte gezi", "emoji": "🗺", "default_title": "Birlikte gidelim mi?"},
     "board": {"label": "Masa oyunu", "emoji": "🎲", "default_title": "Masa oyunu grubu arıyorum"},
     "other": {"label": "Diğer", "emoji": "✨", "default_title": "Arkadaş arıyorum"},
 }
@@ -26,13 +33,40 @@ SKILL_LEVELS = {
     "advanced": "İleri",
 }
 
+PARTNER_PLACE_CATEGORIES = frozenset(
+    {"visit", "camp", "fun", "nightlife", "family", "event", "concert", "theater", "cinema"}
+)
+
+_TR_MONTH = (
+    "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+    "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
+)
+_TR_WDAY = ("Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar")
+
+
+def partner_eligible(category: str | None) -> bool:
+    return (category or "") in PARTNER_PLACE_CATEGORIES
+
+
+def _format_when_label(when_at: datetime) -> str:
+    return f"{when_at.day} {_TR_MONTH[when_at.month - 1]} {_TR_WDAY[when_at.weekday()]}"
+
+
+def _default_place_seek_title(place_title: str) -> str:
+    t = (place_title or "Buraya").strip()
+    return f"{t}'a gideceğim — benimle gelmek isteyen var mı?"[:120]
+
 
 def activity_meta(key: str) -> dict[str, str]:
     return ACTIVITY_TYPES.get(key) or ACTIVITY_TYPES["other"]
 
 
 def _join_count(seek: ActivitySeek) -> int:
-    return sum(1 for j in seek.joins if j.status == "joined")
+    return sum(1 for j in seek.joins if j.status == JOIN_JOINED)
+
+
+def _pending_requests(seek: ActivitySeek) -> list[ActivitySeekJoin]:
+    return [j for j in seek.joins if j.status == JOIN_PENDING]
 
 
 def _spots_left(seek: ActivitySeek) -> int:
@@ -74,14 +108,19 @@ def list_open_seeks(db, *, activity_type: str | None = None, ilce: str | None = 
 def seek_public(db, seek: ActivitySeek, viewer: User | None) -> dict:
     meta = activity_meta(seek.activity_type)
     host = seek.user
-    joined_ids = {j.user_id for j in seek.joins if j.status == "joined"}
+    joined_ids = {j.user_id for j in seek.joins if j.status == JOIN_JOINED}
     spots_left = _spots_left(seek)
     viewer_joined = bool(viewer and viewer.id in joined_ids)
+    viewer_pending = bool(
+        viewer
+        and any(j.user_id == viewer.id and j.status == JOIN_PENDING for j in seek.joins)
+    )
     viewer_host = bool(viewer and viewer.id == seek.user_id)
     joiners: list[dict] = []
+    pending_requests: list[dict] = []
     if viewer_joined or viewer_host:
         for j in seek.joins:
-            if j.status != "joined" or not j.user:
+            if j.status != JOIN_JOINED or not j.user:
                 continue
             joiners.append(
                 {
@@ -89,6 +128,21 @@ def seek_public(db, seek: ActivitySeek, viewer: User | None) -> dict:
                     "name": j.user.display_name(),
                     "handle": j.user.handle(),
                     "avatar_url": j.user.avatar_url or "",
+                    "points": user_points(j.user),
+                }
+            )
+    if viewer_host:
+        for j in _pending_requests(seek):
+            if not j.user:
+                continue
+            pending_requests.append(
+                {
+                    "user_id": j.user.id,
+                    "name": j.user.display_name(),
+                    "handle": j.user.handle(),
+                    "avatar_url": j.user.avatar_url or "",
+                    "points": user_points(j.user),
+                    "ago": _ago(j.created_at),
                 }
             )
     out = {
@@ -100,6 +154,7 @@ def seek_public(db, seek: ActivitySeek, viewer: User | None) -> dict:
         "host": host.display_name() if host else "Üye",
         "host_id": seek.user_id,
         "host_handle": host.handle() if host else "",
+        "host_points": user_points(host) if host else 0,
         "ilce": seek.ilce or "",
         "venue": seek.venue or "",
         "time_label": seek.when_label or "Esnek",
@@ -112,15 +167,28 @@ def seek_public(db, seek: ActivitySeek, viewer: User | None) -> dict:
         "slots_filled": _join_count(seek),
         "spots_left": spots_left,
         "joiners_count": len(joined_ids),
+        "pending_count": len(pending_requests),
         "joined": viewer_joined,
+        "pending": viewer_pending,
         "is_mine": viewer_host,
         "status": seek.status,
         "ago": _ago(seek.created_at),
         "contact_hint": "",
         "joiners": joiners,
+        "pending_requests": pending_requests,
     }
     if viewer_joined or viewer_host:
         out["contact_hint"] = seek.contact_hint or ""
+    if seek.place_id:
+        from models import Place
+        from seo_urls import place_seo_path
+
+        pl = db.get(Place, seek.place_id)
+        if pl and pl.status == "approved":
+            out["place_id"] = pl.id
+            out["place_title"] = pl.title
+            out["place_slug"] = pl.slug
+            out["place_path"] = place_seo_path(pl)
     return out
 
 
@@ -188,10 +256,89 @@ def create_seek(db, user: User, payload: dict) -> tuple[ActivitySeek | None, str
         status="open",
         expires_at=datetime.utcnow() + timedelta(days=7),
     )
+    try:
+        place_id = int(payload.get("place_id") or 0)
+    except (TypeError, ValueError):
+        place_id = 0
+    if place_id > 0:
+        seek.place_id = place_id
+        if when_at and when_at > datetime.utcnow():
+            seek.expires_at = when_at + timedelta(days=1)
     db.add(seek)
     db.commit()
     db.refresh(seek)
     return seek, None
+
+
+def get_user_open_place_seek(db, user_id: int, place_id: int) -> ActivitySeek | None:
+    return (
+        db.query(ActivitySeek)
+        .filter(
+            ActivitySeek.user_id == user_id,
+            ActivitySeek.place_id == place_id,
+            ActivitySeek.status == "open",
+        )
+        .order_by(ActivitySeek.id.desc())
+        .first()
+    )
+
+
+def create_place_seek(
+    db,
+    user: User,
+    place,
+    *,
+    when_date: str,
+    slots_needed: int = 1,
+    note: str = "",
+) -> tuple[ActivitySeek | None, str | None]:
+    """Yer detayından «partner bul» ilanı."""
+    from seo_urls import place_seo_path
+
+    if not partner_eligible(place.category):
+        return None, "Bu kayıt türü için partner ilanı açılamaz"
+
+    existing = get_user_open_place_seek(db, user.id, place.id)
+    if existing:
+        return None, "Bu yer için zaten açık ilanın var"
+
+    raw = (when_date or "").strip()
+    if not raw:
+        return None, "Gidiş tarihi seç"
+    try:
+        parts = raw.split("-")
+        y, m, d = int(parts[0]), int(parts[1]), int(parts[2])
+        when_at = datetime(y, m, d, 10, 0, 0)
+    except (ValueError, IndexError):
+        return None, "Geçersiz tarih"
+
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    if when_at < today:
+        return None, "Geçmiş tarih seçilemez"
+
+    path = place_seo_path(place)
+    title = _default_place_seek_title(place.title)
+    when_label = _format_when_label(when_at)
+    body = filter_profanity((note or "").strip())
+    if not body:
+        body = f"{place.title} — detay: {path}"
+    else:
+        body = f"{body} · {path}"[:800]
+
+    payload = {
+        "activity_type": "visit",
+        "title": title,
+        "slots_needed": slots_needed,
+        "ilce": place.ilce or "",
+        "venue": place.title,
+        "when_label": when_label,
+        "when_at": when_at.isoformat(),
+        "note": body,
+        "place_id": place.id,
+        "skill_level": "any",
+        "points_min": 0,
+    }
+    return create_seek(db, user, payload)
 
 
 def join_seek(db, user: User, seek_id: int) -> tuple[ActivitySeek | None, str | None]:
@@ -205,7 +352,7 @@ def join_seek(db, user: User, seek_id: int) -> tuple[ActivitySeek | None, str | 
     if seek.user_id == user.id:
         return None, "Kendi ilanına katılamazsın"
 
-    if int(user.loyalty_points or 0) < int(seek.points_min or 0):
+    if user_points(user) < int(seek.points_min or 0):
         return None, f"En az {seek.points_min} puan gerekli"
 
     existing = (
@@ -213,8 +360,10 @@ def join_seek(db, user: User, seek_id: int) -> tuple[ActivitySeek | None, str | 
         .filter(ActivitySeekJoin.seek_id == seek.id, ActivitySeekJoin.user_id == user.id)
         .first()
     )
-    if existing and existing.status == "joined":
+    if existing and existing.status == JOIN_JOINED:
         return None, "Zaten katıldın"
+    if existing and existing.status == JOIN_PENDING:
+        return None, "Onay bekliyorsun — ilan sahibi yanıtlayacak"
 
     if _spots_left(seek) <= 0:
         seek.status = "filled"
@@ -222,13 +371,76 @@ def join_seek(db, user: User, seek_id: int) -> tuple[ActivitySeek | None, str | 
         return None, "Kontenjan doldu"
 
     if existing:
-        existing.status = "joined"
+        existing.status = JOIN_PENDING
         existing.created_at = datetime.utcnow()
+        existing.responded_at = None
     else:
-        db.add(ActivitySeekJoin(seek_id=seek.id, user_id=user.id, status="joined"))
+        db.add(ActivitySeekJoin(seek_id=seek.id, user_id=user.id, status=JOIN_PENDING))
 
+    db.commit()
+    db.refresh(seek)
+    return seek, None
+
+
+def approve_join(
+    db, host: User, seek_id: int, join_user_id: int
+) -> tuple[ActivitySeek | None, str | None]:
+    seek = db.query(ActivitySeek).filter(ActivitySeek.id == seek_id).first()
+    if seek is None:
+        return None, "İlan bulunamadı"
+    if seek.user_id != host.id and host.role != "admin":
+        return None, "Yetki yok"
+    _refresh_status(seek)
+    if seek.status != "open":
+        return None, "İlan kapalı"
+    if _spots_left(seek) <= 0:
+        return None, "Kontenjan doldu"
+
+    row = (
+        db.query(ActivitySeekJoin)
+        .filter(
+            ActivitySeekJoin.seek_id == seek.id,
+            ActivitySeekJoin.user_id == join_user_id,
+            ActivitySeekJoin.status == JOIN_PENDING,
+        )
+        .first()
+    )
+    if row is None:
+        return None, "Bekleyen istek yok"
+
+    row.status = JOIN_JOINED
+    row.responded_at = datetime.utcnow()
     db.flush()
     _refresh_status(seek)
+    award_activity_join_approved(db, join_user_id=join_user_id, seek_id=seek.id, host_id=seek.user_id)
+    db.commit()
+    db.refresh(seek)
+    return seek, None
+
+
+def reject_join(
+    db, host: User, seek_id: int, join_user_id: int
+) -> tuple[ActivitySeek | None, str | None]:
+    seek = db.query(ActivitySeek).filter(ActivitySeek.id == seek_id).first()
+    if seek is None:
+        return None, "İlan bulunamadı"
+    if seek.user_id != host.id and host.role != "admin":
+        return None, "Yetki yok"
+
+    row = (
+        db.query(ActivitySeekJoin)
+        .filter(
+            ActivitySeekJoin.seek_id == seek.id,
+            ActivitySeekJoin.user_id == join_user_id,
+            ActivitySeekJoin.status == JOIN_PENDING,
+        )
+        .first()
+    )
+    if row is None:
+        return None, "Bekleyen istek yok"
+
+    row.status = JOIN_REJECTED
+    row.responded_at = datetime.utcnow()
     db.commit()
     db.refresh(seek)
     return seek, None
@@ -241,14 +453,20 @@ def leave_seek(db, user: User, seek_id: int) -> tuple[ActivitySeek | None, str |
 
     row = (
         db.query(ActivitySeekJoin)
-        .filter(ActivitySeekJoin.seek_id == seek.id, ActivitySeekJoin.user_id == user.id, ActivitySeekJoin.status == "joined")
+        .filter(
+            ActivitySeekJoin.seek_id == seek.id,
+            ActivitySeekJoin.user_id == user.id,
+            ActivitySeekJoin.status.in_((JOIN_JOINED, JOIN_PENDING)),
+        )
         .first()
     )
     if row is None:
         return None, "Katılım yok"
 
-    row.status = "left"
-    if seek.status == "filled":
+    was_joined = row.status == JOIN_JOINED
+    row.status = JOIN_LEFT
+    row.responded_at = datetime.utcnow()
+    if was_joined and seek.status == "filled":
         seek.status = "open"
     db.commit()
     db.refresh(seek)

@@ -175,37 +175,25 @@
       <a class="wa-feat" href="/okullar"><div class="ico" style="background:#ede9fe">🎓</div><b>Okullar</b><i>Dershane · okul</i></a>
       <a class="wa-feat" href="/marketler"><div class="ico" style="background:var(--lilac)">🛒</div><b>Marketler</b><i>Yakın + kampanya</i></a>
       <a class="wa-feat" href="/sinema"><div class="ico" style="background:var(--lilac)">🎬</div><b>Sinema</b><i>Vizyon</i></a>
-      <a class="wa-feat" href="/eglence"><div class="ico" style="background:var(--sand)">🎳</div><b>Eğlence</b><i>Gece & aktivite</i></a>
+      <a class="wa-feat" href="/gece-hayati"><div class="ico" style="background:#1e1b4b">🍸</div><b>Gece hayatı</b><i>Bar · kulüp · meyhane</i></a>
+      <a class="wa-feat" href="/eglence"><div class="ico" style="background:var(--sand)">🎳</div><b>Eğlence</b><i>Bowling & escape</i></a>
       <a class="wa-feat" href="/etkinlikler"><div class="ico" style="background:var(--mint)">📅</div><b>Etkinlik</b><i>Takvim</i></a>
+      <a class="wa-feat" href="/dugun-salonlari"><div class="ico" style="background:#fce7f3">💒</div><b>Düğün salonu</b><i>Adres · fiyat</i></a>
       <a class="wa-feat" href="/alisveris"><div class="ico" style="background:var(--sky)">🛍</div><b>Alışveriş</b><i>AVM & mağaza</i></a>
     </div>
   </div>
   <div class="wa-hero-media" id="hero-slider" data-interval="5500" aria-roledescription="carousel" aria-label="Bursa görselleri">
-    {% set hero_slides = [
-      ('visit/golyazi.jpg', 'Gölyazı · Uluabat'),
-      ('visit/ulu-cami.jpg', 'Ulu Cami'),
-      ('visit/cumalikizik.jpg', 'Cumalıkızık'),
-      ('visit/tophane.jpg', 'Tophane · Hisar'),
-      ('visit/yesil-turbe.jpg', 'Yeşil Türbe'),
-      ('visit/inkaya-cinari.jpg', 'İnkaya Çınarı'),
-      ('visit/koza-han.jpg', 'Koza Han'),
-      ('visit/suuctu.jpg', 'Suuçtu Şelalesi'),
-      ('visit/tirilye.jpg', 'Tirilye / Zeytinbağı'),
-      ('visit/panorama-1326.jpg', 'Panorama 1326'),
-      ('visit/kale-sokak.jpg', 'Kale Sokak'),
-      ('visit/muradiye.jpg', 'Muradiye')
-    ] %}
     <div class="wa-hero-slides">
-      {% for src, title in hero_slides %}
+      {% for slide in hero_slides %}
       <figure class="wa-hero-slide{% if loop.first %} is-on{% endif %}" data-i="{{ loop.index0 }}">
-        <img src="{{ url_for('static', filename=src) }}" alt="{{ title }}" width="640" height="800" {% if loop.first %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %}>
-        <figcaption class="wa-hero-cap">{{ title }}</figcaption>
+        <img src="{{ slide.img }}" alt="{{ slide.title }}" width="640" height="800" {% if loop.first %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %}>
+        <figcaption class="wa-hero-cap">{{ slide.title }}</figcaption>
       </figure>
       {% endfor %}
     </div>
     <div class="wa-hero-dots" role="tablist" aria-label="Slayt">
-      {% for src, title in hero_slides %}
-      <button type="button" class="wa-hero-dot{% if loop.first %} on{% endif %}" role="tab" aria-label="{{ title }}" aria-selected="{{ 'true' if loop.first else 'false' }}" data-i="{{ loop.index0 }}"></button>
+      {% for slide in hero_slides %}
+      <button type="button" class="wa-hero-dot{% if loop.first %} on{% endif %}" role="tab" aria-label="{{ slide.title }}" aria-selected="{{ 'true' if loop.first else 'false' }}" data-i="{{ loop.index0 }}"></button>
       {% endfor %}
     </div>
     <div class="wa-float">
@@ -356,8 +344,8 @@
 </section>
 
   <div class="wa-stats-grid">
-    <div><div>📍</div><b>50+</b><span>Gezilecek yer</span></div>
-    <div><div>😊</div><b>{{ place_count }}+</b><span>Kayıtlı yer</span></div>
+    <div><div>📍</div><b>{{ visit_count }}+</b><span>Gezilecek yer</span></div>
+    <div><div>😊</div><b>{{ place_count }}+</b><span>Kayıtlı yer{% if places_new_week %} · bu hafta +{{ places_new_week }}{% endif %}</span></div>
     <div><div>★</div><b>4.8</b><span>Ortalama puan</span></div>
     <div><div>💬</div><b>7/24</b><span>Destek</span></div>
   </div>

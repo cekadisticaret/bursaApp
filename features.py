@@ -45,6 +45,8 @@ MAP_CATEGORIES = (
     ("vet", "Veteriner"),
     ("hospital", "Hastane"),
     ("school", "Okul"),
+    ("wedding", "Düğün salonu"),
+    ("nightlife", "Gece hayatı"),
 )
 
 MAP_RADIUS_OPTIONS = (
@@ -588,7 +590,9 @@ def kampanyalar():
 
 @bp.route("/kuponlar", methods=["GET", "POST"])
 def kuponlar():
-    LOYALTY_COST = 100
+    from user_points import POINTS_COUPON_COST, spend_points, user_points
+
+    LOYALTY_COST = POINTS_COUPON_COST
     LOYALTY_PCT = 10
     user = load_user()
     db = SessionLocal()
@@ -601,16 +605,22 @@ def kuponlar():
             if not u:
                 flash("Oturum geçersiz.", "err")
                 return redirect("/kuponlar")
-            pts = int(u.loyalty_points or 0)
-            if pts < LOYALTY_COST:
-                flash(f"Yetersiz puan ({pts}/{LOYALTY_COST}). Yorum yazarak puan kazan.", "err")
+            ok, err = spend_points(
+                db,
+                u,
+                LOYALTY_COST,
+                reason="coupon_redeem",
+                ref_type="coupon",
+                ref_id=int(datetime.utcnow().timestamp()),
+            )
+            if not ok:
+                flash(err or "Yetersiz puan.", "err")
                 return redirect("/kuponlar")
             import secrets
 
             code = f"BA{u.id}{secrets.token_hex(3).upper()}"
             while db.query(Coupon).filter(Coupon.code == code).first():
                 code = f"BA{u.id}{secrets.token_hex(3).upper()}"
-            u.loyalty_points = pts - LOYALTY_COST
             db.add(
                 Coupon(
                     code=code,
@@ -623,7 +633,7 @@ def kuponlar():
                 )
             )
             db.commit()
-            flash(f"Kupon hazır: {code} · kalan puan {u.loyalty_points}", "ok")
+            flash(f"Kupon hazır: {code} · kalan puan {user_points(u)}", "ok")
             return redirect("/kuponlar")
 
         q = db.query(Coupon).filter(Coupon.status == "active")
@@ -641,7 +651,7 @@ def kuponlar():
         points = 0
         if user:
             u = db.get(User, user.id)
-            points = int(u.loyalty_points or 0) if u else 0
+            points = user_points(u) if u else 0
         return render_template(
             "coupons.html",
             items=items,
@@ -705,6 +715,23 @@ def oneriyor_detail(slug: str):
         )
     finally:
         db.close()
+
+
+def annotate_favorites(db, user, places: list[dict]) -> None:
+    """Liste kartlarına is_fav işareti (POST /favori/<slug> ile güncellenir)."""
+    slugs: set[str] = set()
+    if user:
+        from models import Favorite, Place
+
+        rows = (
+            db.query(Place.slug)
+            .join(Favorite, Favorite.place_id == Place.id)
+            .filter(Favorite.user_id == user.id)
+            .all()
+        )
+        slugs = {r[0] for r in rows if r[0]}
+    for p in places:
+        p["is_fav"] = (p.get("slug") or "") in slugs
 
 
 @bp.route("/favori/<slug>", methods=["POST"])

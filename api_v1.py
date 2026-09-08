@@ -733,6 +733,45 @@ def activities_seeking_join(seek_id: int):
         seek, err = join_seek(db, user, seek_id)
         if err:
             return _err(err, 400)
+        return jsonify(
+            {
+                "ok": True,
+                "pending": True,
+                "message": "Onay bekleniyor",
+                "seek": seek_public(db, seek, user),
+            }
+        )
+    finally:
+        db.close()
+
+
+@bp.route("/activities/seeking/<int:seek_id>/join/<int:join_user_id>/approve", methods=["POST"])
+@login_required
+def activities_seeking_approve(seek_id: int, join_user_id: int):
+    from activity_seek import approve_join, seek_public
+
+    user = load_user()
+    db = SessionLocal()
+    try:
+        seek, err = approve_join(db, user, seek_id, join_user_id)
+        if err:
+            return _err(err, 400)
+        return jsonify({"ok": True, "seek": seek_public(db, seek, user)})
+    finally:
+        db.close()
+
+
+@bp.route("/activities/seeking/<int:seek_id>/join/<int:join_user_id>/reject", methods=["POST"])
+@login_required
+def activities_seeking_reject(seek_id: int, join_user_id: int):
+    from activity_seek import reject_join, seek_public
+
+    user = load_user()
+    db = SessionLocal()
+    try:
+        seek, err = reject_join(db, user, seek_id, join_user_id)
+        if err:
+            return _err(err, 400)
         return jsonify({"ok": True, "seek": seek_public(db, seek, user)})
     finally:
         db.close()

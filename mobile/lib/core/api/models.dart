@@ -243,8 +243,10 @@ class ActivitySeek {
     required this.slotsNeeded,
     required this.spotsLeft,
     required this.joined,
+    required this.pending,
     required this.isMine,
     this.contactHint = '',
+    this.hostPoints = 0,
   });
 
   final int id;
@@ -261,8 +263,10 @@ class ActivitySeek {
   final int slotsNeeded;
   final int spotsLeft;
   final bool joined;
+  final bool pending;
   final bool isMine;
   final String contactHint;
+  final int hostPoints;
 
   factory ActivitySeek.fromJson(Map<String, dynamic> j) => ActivitySeek(
         id: (j['id'] as num?)?.toInt() ?? 0,
@@ -279,8 +283,10 @@ class ActivitySeek {
         slotsNeeded: (j['slots_needed'] as num?)?.toInt() ?? 1,
         spotsLeft: (j['spots_left'] as num?)?.toInt() ?? 1,
         joined: j['joined'] == true,
+        pending: j['pending'] == true,
         isMine: j['is_mine'] == true,
         contactHint: j['contact_hint']?.toString() ?? '',
+        hostPoints: (j['host_points'] as num?)?.toInt() ?? 0,
       );
 }
 

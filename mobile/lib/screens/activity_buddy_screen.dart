@@ -157,7 +157,7 @@ class _ActivityBuddyScreenState extends State<ActivityBuddyScreen> {
     try {
       await auth.api.joinActivitySeek(row.id);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Katıldın')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('İstek gönderildi — onay bekleniyor')));
         await _load();
       }
     } catch (e) {
@@ -269,7 +269,7 @@ class _SeekCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(row.title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
-                    Text('${row.host} · ${row.ilce.isEmpty ? "Bursa" : row.ilce} · ${row.timeLabel}',
+                    Text('${row.host} · 🏅 ${row.hostPoints} puan · ${row.ilce.isEmpty ? "Bursa" : row.ilce} · ${row.timeLabel}',
                         style: const TextStyle(color: AppColors.muted, fontSize: 12)),
                   ],
                 ),
@@ -291,9 +291,11 @@ class _SeekCard extends StatelessWidget {
                 ? const Text('Senin ilanın', style: TextStyle(color: AppColors.muted, fontWeight: FontWeight.w700))
                 : row.joined
                     ? OutlinedButton(onPressed: onLeave, child: const Text('Ayrıl'))
-                    : row.spotsLeft > 0
-                        ? FilledButton(onPressed: onJoin, child: const Text('Katıl'))
-                        : const Text('Dolu', style: TextStyle(color: AppColors.muted)),
+                    : row.pending
+                        ? OutlinedButton(onPressed: onLeave, child: const Text('İsteği geri çek'))
+                        : row.spotsLeft > 0
+                            ? FilledButton(onPressed: onJoin, child: const Text('Katıl'))
+                            : const Text('Dolu', style: TextStyle(color: AppColors.muted)),
           ),
         ],
       ),

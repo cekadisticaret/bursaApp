@@ -110,6 +110,10 @@
             {% if p.hours_text %} · {{ p.hours_text }}{% endif %}
           </p>
           {% if p.blurb %}<p class="food-hit-snip">“{{ p.blurb[:140] }}{% if p.blurb|length > 140 %}…{% endif %}”</p>{% endif %}
+          <div class="food-hit-actions">
+            {% include "_fav_place_btn.html" %}
+            <a class="food-hit-detail" href="{{ p.path or ('/yer/' ~ p.slug) }}">Detay →</a>
+          </div>
         </div>
       </article>
       {% endfor %}

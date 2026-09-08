@@ -102,6 +102,7 @@
           {% endif %}
         </span>
         <span class="wa-user-chip-name">{{ nav_user.name.split()[0] }}</span>
+        <span class="wa-user-chip-pts">🏅 {{ user_points }}</span>
       </a>
       <a class="wa-btn wa-btn-ghost" href="/cikis" title="Çıkış" aria-label="Çıkış yap" rel="nofollow">Çıkış</a>
       {% else %}
@@ -142,6 +143,7 @@
         <a href="/album">Albüm</a>
         <a href="/sinema">Sinema</a>
         <a href="/tiyatro">Tiyatro</a>
+        <a class="{{ 'on' if nav=='nightlife' else '' }}" href="/gece-hayati"><b>Gece hayatı</b></a>
         <a href="/eglence">Eğlence</a>
         <a href="/etkinlikler">Etkinlikler</a>
         <a href="/organizasyonlar">Organizasyonlar</a>

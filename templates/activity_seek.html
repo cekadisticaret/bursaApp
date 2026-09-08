@@ -8,6 +8,9 @@
 <section class="as-page">
   <header class="as-head">
     <p class="as-lead">Bir aktivite için eksik kişi mi arıyorsun, yoksa gruba mı katılmak istiyorsun? İlan ver veya aşağıdan katıl.</p>
+    {% if u %}
+    <p class="as-points-bar">🏅 Senin puanın: <b>{{ user_points }}</b> · {{ user_points_level }} · <a href="/kuponlar">Kupon çevir</a></p>
+    {% endif %}
     <div class="as-filters chips">
       <a class="chip {{ 'on' if not filter_type else '' }}" href="/arkadas-ara{% if filter_ilce %}?ilce={{ filter_ilce|urlencode }}{% endif %}">Tümü</a>
       {% for key, meta in activity_types.items() %}
@@ -64,7 +67,7 @@
           <input type="number" name="points_min" min="0" max="5000" value="0">
         </label>
       </div>
-      <label>İletişim ipucu <small>(katılanlar görür)</small>
+      <label>İletişim ipucu <small>(onaylı katılımcılar görür)</small>
         <input type="text" name="contact_hint" maxlength="120" placeholder="WhatsApp, Telegram @…">
       </label>
       <button type="submit" class="m-btn-pri">İlanı yayınla</button>
@@ -79,27 +82,53 @@
 
   <div class="as-list">
     {% for s in seeks %}
-    <article class="as-card ff-card">
+    <article class="as-card ff-card{% if highlight_id and highlight_id == s.id %} as-card-focus{% endif %}" id="ilan-{{ s.id }}">
       <div class="as-card-top">
         <span class="as-emoji">{{ s.emoji }}</span>
         <div>
           <h2>{{ s.title }}</h2>
-          <p class="as-meta">{{ s.host }} · {{ s.ilce or 'Bursa' }} · {{ s.time_label }} · {{ s.ago }}</p>
+          <p class="as-meta">{{ s.host }} · 🏅 {{ s.host_points }} puan · {{ s.ilce or 'Bursa' }} · {{ s.time_label }} · {{ s.ago }}</p>
         </div>
         <span class="as-badge">{{ s.spots_left }} kontenjan</span>
       </div>
       {% if s.note %}<p class="as-note">{{ s.note }}</p>{% endif %}
-      {% if s.venue %}<p class="as-venue">📍 {{ s.venue }}</p>{% endif %}
+      {% if s.place_path %}
+      <p class="as-venue">📍 <a href="{{ s.place_path }}">{{ s.place_title or s.venue }}</a></p>
+      {% elif s.venue %}<p class="as-venue">📍 {{ s.venue }}</p>{% endif %}
       <p class="as-tags">
         <span>{{ s.activity_label }}</span>
         {% if s.skill_label != 'Fark etmez' %}<span>{{ s.skill_label }}</span>{% endif %}
         {% if s.points_min %}<span>{{ s.points_min }}+ puan</span>{% endif %}
         <span>{{ s.slots_filled }}/{{ s.slots_needed }} dolu</span>
+        {% if s.pending_count %}<span class="as-tag-warn">{{ s.pending_count }} onay bekliyor</span>{% endif %}
       </p>
+
+      {% if s.is_mine and s.pending_requests %}
+      <div class="as-pending">
+        <p class="as-pending-title">Onay bekleyen istekler</p>
+        {% for pr in s.pending_requests %}
+        <div class="as-pending-row">
+          <div>
+            <strong>{{ pr.name }}</strong>
+            <small>{{ pr.handle }} · 🏅 {{ pr.points }} puan · {{ pr.ago }}</small>
+          </div>
+          <div class="as-pending-actions">
+            <form method="post" action="/arkadas-ara/{{ s.id }}/onayla/{{ pr.user_id }}">
+              <button type="submit" class="m-btn-pri sm">Kabul et</button>
+            </form>
+            <form method="post" action="/arkadas-ara/{{ s.id }}/reddet/{{ pr.user_id }}">
+              <button type="submit" class="m-btn-ghost sm">Reddet</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
       {% if s.joined and s.joiners %}
       <ul class="as-joiners">
         {% for j in s.joiners %}
-        <li>{{ j.name }} <small>{{ j.handle }}</small></li>
+        <li>{{ j.name }} <small>{{ j.handle }} · 🏅 {{ j.points }} puan</small></li>
         {% endfor %}
       </ul>
       {% endif %}
@@ -114,6 +143,11 @@
         {% elif s.joined %}
         <form method="post" action="/arkadas-ara/{{ s.id }}/ayril">
           <button type="submit" class="m-btn-ghost sm">Ayrıl</button>
+        </form>
+        {% elif s.pending %}
+        <span class="as-wait">Onay bekleniyor</span>
+        <form method="post" action="/arkadas-ara/{{ s.id }}/ayril">
+          <button type="submit" class="m-btn-ghost sm">İsteği geri çek</button>
         </form>
         {% elif s.spots_left > 0 %}
           {% if u %}
