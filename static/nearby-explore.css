@@ -475,6 +475,9 @@ body.is-near-explore .wa-wrap {
   background: #eef2f7;
   font-family: inherit;
 }
+.nx-canvas .nx-map-pin {
+  cursor: pointer;
+}
 
 /* Sağ sabit detay paneli */
 .nx-rail-detail {

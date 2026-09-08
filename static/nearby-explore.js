@@ -172,6 +172,7 @@
         fillColor: "#2563eb",
         fillOpacity: 0.05,
         dashArray: "4 8",
+        interactive: false,
       }).addTo(map);
     }
 
@@ -182,11 +183,12 @@
     pins.forEach(function (p, idx) {
       if (p.lat == null || p.lng == null) return;
       var m = L.circleMarker([p.lat, p.lng], {
-        radius: 8,
+        radius: 12,
         color: "#fff",
         weight: 2,
         fillColor: colorFor(p),
         fillOpacity: 0.95,
+        className: "nx-map-pin",
       }).addTo(map);
       m._nxIdx = idx;
       m.on("click", function () {
@@ -302,7 +304,7 @@
       btn.classList.remove("on");
     });
     markers.forEach(function (m) {
-      m.setRadius(8);
+      m.setRadius(12);
     });
   }
 
@@ -316,10 +318,10 @@
     });
     markers.forEach(function (m) {
       if (m._nxIdx === idx) {
-        m.setRadius(11);
+        m.setRadius(16);
         m.bringToFront();
       } else {
-        m.setRadius(8);
+        m.setRadius(12);
       }
     });
 

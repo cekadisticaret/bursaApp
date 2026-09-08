@@ -116,7 +116,8 @@
       color: '#5B5FEF',
       weight: 1.5,
       fillColor: '#5B5FEF',
-      fillOpacity: 0.06
+      fillOpacity: 0.06,
+      interactive: false,
     }).addTo(map);
   }
 
@@ -125,13 +126,16 @@
     if (p.lat == null || p.lng == null) return;
     const c = colorFor(p);
     const m = L.circleMarker([p.lat, p.lng], {
-      radius: 7, color: '#fff', weight: 1.5, fillColor: c, fillOpacity: 0.95
+      radius: 12, color: '#fff', weight: 2, fillColor: c, fillOpacity: 0.95
     }).addTo(map);
     const href = p.path || (p.slug ? ('/yer/' + p.slug) : '');
     const link = href ? ('<br><a href="'+ href +'">Detay →</a>') : '';
     m.bindPopup(
       '<b>'+ (p.title || '') +'</b><br>'+ fmtDist(p.distance_m) + (p.category_label || p.category || '') + link
     );
+    m.on('click', function () {
+      m.openPopup();
+    });
     bounds.push([p.lat, p.lng]);
   });
   if (bounds.length > 1) {

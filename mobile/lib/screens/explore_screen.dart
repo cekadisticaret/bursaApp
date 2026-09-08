@@ -81,7 +81,30 @@ class _ExploreScreenState extends State<ExploreScreen> {
               options: MapOptions(
                 initialCenter: _center,
                 initialZoom: 13,
-                onTap: (_, __) => setState(() => _selected = null),
+                onTap: (event, point) {
+                  const dist = Distance();
+                  PlaceItem? hit;
+                  var best = double.infinity;
+                  for (final p in _places) {
+                    if (p.lat == null || p.lng == null) continue;
+                    final d = dist.as(
+                      LengthUnit.Meter,
+                      point,
+                      LatLng(p.lat!, p.lng!),
+                    );
+                    if (d < best) {
+                      best = d;
+                      hit = p;
+                    }
+                  }
+                  setState(() {
+                    if (hit != null && best < 120) {
+                      _selected = hit;
+                    } else {
+                      _selected = null;
+                    }
+                  });
+                },
               ),
               children: [
                 TileLayer(
@@ -106,20 +129,21 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     ),
                     ..._places.where((p) => p.lat != null && p.lng != null).map((p) {
                       final sel = _selected?.slug == p.slug;
+                      final size = sel ? 44.0 : 36.0;
                       return Marker(
                         point: LatLng(p.lat!, p.lng!),
-                        width: sel ? 44 : 34,
-                        height: sel ? 44 : 34,
-                        child: GestureDetector(
-                          onTap: () => setState(() => _selected = p),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: sel ? AppColors.coral : AppColors.nav,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
-                            ),
-                            child: Icon(Icons.place, color: Colors.white, size: sel ? 22 : 18),
+                        width: size,
+                        height: size,
+                        alignment: Alignment.center,
+                        child: Container(
+                          width: size,
+                          height: size,
+                          decoration: BoxDecoration(
+                            color: sel ? AppColors.coral : AppColors.nav,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
                           ),
+                          child: Icon(Icons.place, color: Colors.white, size: sel ? 22 : 18),
                         ),
                       );
                     }),
