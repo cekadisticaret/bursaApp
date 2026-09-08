@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timedelta
 from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 
@@ -404,6 +405,61 @@ def _map_pin_detail(d: dict, user_photo_urls: list | None = None) -> dict:
         "hours_text": (d.get("hours_text") or "").strip(),
         "price_band": (d.get("price_band") or "").strip(),
     }
+
+
+_OSRM_PROFILES = {"foot", "driving", "cycling", "bike", "car"}
+
+
+@bp.route("/api/route")
+def api_map_directions():
+    """Konum → mekan yol rotası (OSRM; kuş uçuşu değil)."""
+    try:
+        lat1 = float(request.args.get("from_lat") or request.args.get("lat1"))
+        lng1 = float(request.args.get("from_lng") or request.args.get("lng1"))
+        lat2 = float(request.args.get("to_lat") or request.args.get("lat2"))
+        lng2 = float(request.args.get("to_lng") or request.args.get("lng2"))
+    except (TypeError, ValueError):
+        return jsonify({"ok": False, "error": "coords"}), 400
+
+    profile = (request.args.get("profile") or "foot").strip().lower()
+    if profile in ("car", "drive"):
+        profile = "driving"
+    elif profile == "bike":
+        profile = "cycling"
+    if profile not in _OSRM_PROFILES:
+        profile = "foot"
+
+    osrm_url = (
+        "https://router.project-osrm.org/route/v1/"
+        f"{profile}/{lng1},{lat1};{lng2},{lat2}"
+        "?overview=full&geometries=geojson&steps=false"
+    )
+    try:
+        req = Request(osrm_url, headers={"User-Agent": "BursaApp/1.0"})
+        with urlopen(req, timeout=10) as resp:
+            payload = json.loads(resp.read().decode("utf-8"))
+    except OSError:
+        return jsonify({"ok": False, "error": "routing"}), 502
+
+    if payload.get("code") != "Ok" or not payload.get("routes"):
+        return jsonify({"ok": False, "error": "no_route"}), 404
+
+    route = payload["routes"][0]
+    geom = route.get("geometry") or {}
+    coords = geom.get("coordinates") or []
+    latlngs = [[pt[1], pt[0]] for pt in coords if len(pt) >= 2]
+    if len(latlngs) < 2:
+        return jsonify({"ok": False, "error": "no_route"}), 404
+
+    return jsonify(
+        {
+            "ok": True,
+            "coordinates": latlngs,
+            "distance_m": route.get("distance"),
+            "duration_s": route.get("duration"),
+            "profile": profile,
+        }
+    )
 
 
 @bp.route("/harita")

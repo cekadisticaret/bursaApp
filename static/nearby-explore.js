@@ -98,6 +98,56 @@
   var map;
   var routeLayer;
   var markers = [];
+  var routeReqId = 0;
+
+  var routeStyle = {
+    color: "#2563eb",
+    weight: 4,
+    opacity: 0.78,
+    lineJoin: "round",
+    lineCap: "round",
+  };
+
+  function drawStraightRoute(destLat, destLng) {
+    L.polyline([center, [destLat, destLng]], Object.assign({}, routeStyle, {
+      opacity: 0.45,
+      dashArray: "6 10",
+    })).addTo(routeLayer);
+  }
+
+  function drawRoadRoute(destLat, destLng) {
+    routeLayer.clearLayers();
+    if (destLat == null || destLng == null) return;
+    var reqId = ++routeReqId;
+    fetch(
+      "/api/route?from_lat=" +
+        encodeURIComponent(center[0]) +
+        "&from_lng=" +
+        encodeURIComponent(center[1]) +
+        "&to_lat=" +
+        encodeURIComponent(destLat) +
+        "&to_lng=" +
+        encodeURIComponent(destLng) +
+        "&profile=foot"
+    )
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (data) {
+        if (reqId !== routeReqId) return;
+        routeLayer.clearLayers();
+        if (data.ok && data.coordinates && data.coordinates.length > 1) {
+          L.polyline(data.coordinates, routeStyle).addTo(routeLayer);
+          return;
+        }
+        drawStraightRoute(destLat, destLng);
+      })
+      .catch(function () {
+        if (reqId !== routeReqId) return;
+        routeLayer.clearLayers();
+        drawStraightRoute(destLat, destLng);
+      });
+  }
 
   function resizeMap() {
     if (!map) return;
@@ -298,6 +348,7 @@
 
   function clearSelection() {
     selectedIdx = -1;
+    routeReqId += 1;
     showDetailPanel(false);
     routeLayer.clearLayers();
     listButtons.forEach(function (btn) {
@@ -327,12 +378,7 @@
 
     routeLayer.clearLayers();
     if (p.lat != null && p.lng != null) {
-      L.polyline([center, [p.lat, p.lng]], {
-        color: "#2563eb",
-        weight: 3,
-        opacity: 0.55,
-        dashArray: "6 10",
-      }).addTo(routeLayer);
+      drawRoadRoute(p.lat, p.lng);
     }
 
     showDetailPanel(true);
