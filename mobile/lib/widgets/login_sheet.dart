@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 import '../core/auth/auth_store.dart';
 import '../core/theme/app_theme.dart';
 
-void showLoginSheet(BuildContext context, {VoidCallback? onSuccess}) {
-  showModalBottomSheet<void>(
+Future<void> showLoginSheet(BuildContext context, {VoidCallback? onSuccess}) {
+  return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,

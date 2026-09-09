@@ -80,7 +80,8 @@ class _ActivityBuddyScreenState extends State<ActivityBuddyScreen> {
                     Text('İlan ver', style: Theme.of(ctx).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: activityType,
+                      key: ValueKey(activityType),
+                      initialValue: activityType,
                       decoration: const InputDecoration(labelText: 'Aktivite'),
                       items: _types
                           .map((t) => DropdownMenuItem(value: t.key, child: Text('${t.emoji} ${t.label}')))
@@ -94,7 +95,8 @@ class _ActivityBuddyScreenState extends State<ActivityBuddyScreen> {
                       children: [
                         Expanded(
                           child: DropdownButtonFormField<int>(
-                            value: slots,
+                            key: ValueKey(slots),
+                            initialValue: slots,
                             decoration: const InputDecoration(labelText: 'Kaç kişi'),
                             items: List.generate(10, (i) => DropdownMenuItem(value: i + 1, child: Text('${i + 1}'))),
                             onChanged: (v) => setModal(() => slots = v ?? 1),
