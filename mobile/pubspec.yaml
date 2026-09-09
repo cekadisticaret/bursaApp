@@ -1,7 +1,7 @@
 name: bursaapp_mobile
 description: BursaApp — Bursa şehir rehberi mobil uygulaması
 publish_to: "none"
-version: 1.0.0+6
+version: 1.0.0+8
 
 environment:
   sdk: ">=3.3.0 <4.0.0"

@@ -10,8 +10,6 @@ workflows:
       vars:
         BUNDLE_ID: com.bursaapp.mobile
         APP_STORE_APPLE_ID: "6809813024"
-        # App Store'a yüklü son bilinen build — API gecikirse taban
-        IOS_MIN_UPLOADED_BUILD: "4"
       flutter: stable
       xcode: latest
       ios_signing:
@@ -22,6 +20,7 @@ workflows:
     scripts:
       - name: Bootstrap Flutter platforms
         script: |
+          set -e
           if [ ! -f ios/Runner.xcodeproj/project.pbxproj ]; then
             flutter create . --org com.bursaapp --project-name mobile --platforms=ios,android
           fi
@@ -32,37 +31,23 @@ workflows:
           /usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryUsageDescription 'Profil fotoğrafı seçmek için galeri erişimi gerekir.'" ios/Runner/Info.plist
       - name: Dependencies
         script: flutter pub get
-      - name: Auto increment iOS build number
+      - name: Resolve iOS build number
         script: |
           set -e
-          VERSION_NAME=$(grep '^version:' pubspec.yaml | sed 's/version:[[:space:]]*//' | cut -d'+' -f1)
-          LOCAL_BUILD=$(grep '^version:' pubspec.yaml | sed 's/version:[[:space:]]*//' | cut -d'+' -f2)
-          if ! [[ "$LOCAL_BUILD" =~ ^[0-9]+$ ]]; then LOCAL_BUILD=0; fi
-          MIN_KNOWN=${IOS_MIN_UPLOADED_BUILD:-0}
-          if ! [[ "$MIN_KNOWN" =~ ^[0-9]+$ ]]; then MIN_KNOWN=0; fi
-          LATEST=$LOCAL_BUILD
-          if [ "$MIN_KNOWN" -gt "$LATEST" ]; then LATEST=$MIN_KNOWN; fi
-          ASC=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || true)
-          TF=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || true)
-          for v in "$ASC" "$TF"; do
-            if [[ "$v" =~ ^[0-9]+$ ]] && [ "$v" -gt "$LATEST" ]; then LATEST=$v; fi
-          done
-          NEXT=$((LATEST + 1))
-          echo "App Store=$ASC · TestFlight=$TF · pubspec=+$LOCAL_BUILD · min=+$MIN_KNOWN · max=$LATEST · NEXT=+$NEXT"
-          perl -i -pe "s/^version: .*/version: ${VERSION_NAME}+${NEXT}/" pubspec.yaml
-          echo "$VERSION_NAME" > .ios_version_name
-          echo "$NEXT" > .ios_build_number
+          eval "$(bash scripts/ios_resolve_build.sh resolve pubspec.yaml | sed 's/^/export IOS_/')"
+          echo "App Store=$IOS_asc_latest · TestFlight=$IOS_tf_latest · pubspec=+$IOS_local_build · son=$IOS_store_latest · YENİ=+$IOS_next_build"
+          perl -i -pe "s/^version: .*/version: ${IOS_version_name}+${IOS_next_build}/" pubspec.yaml
+          echo "$IOS_version_name" > .ios_version_name
+          echo "$IOS_next_build" > .ios_build_number
           grep '^version:' pubspec.yaml
           flutter pub get
-          sed -i '' "s/CURRENT_PROJECT_VERSION = [^;]*;/CURRENT_PROJECT_VERSION = ${NEXT};/g" ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' "s/MARKETING_VERSION = [^;]*;/MARKETING_VERSION = ${VERSION_NAME};/g" ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [^;]*;/CURRENT_PROJECT_VERSION = ${IOS_next_build};/g" ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' "s/MARKETING_VERSION = [^;]*;/MARKETING_VERSION = ${IOS_version_name};/g" ios/Runner.xcodeproj/project.pbxproj
       - name: Set up code signing
         script: |
           keychain initialize
           keychain add-certificates
           xcode-project use-profiles
-          echo "=== Keychain ==="
-          security find-identity -v -p codesigning
           if [ ! -f "$HOME/export_options.plist" ]; then
             echo "export_options.plist oluşmadı"
             exit 1
@@ -72,44 +57,44 @@ workflows:
       - name: Build IPA
         script: |
           set -e
-          if [ ! -f .ios_build_number ]; then
-            echo "HATA: .ios_build_number yok — yeni build başlat, Retry kullanma"
-            exit 1
-          fi
           VERSION_NAME=$(cat .ios_version_name)
           BUILD_NUMBER=$(cat .ios_build_number)
-          MIN_KNOWN=${IOS_MIN_UPLOADED_BUILD:-0}
-          if [ "$BUILD_NUMBER" -le "$MIN_KNOWN" ]; then
-            echo "HATA: build $BUILD_NUMBER <= min $MIN_KNOWN (App Store'da zaten var)"
-            exit 1
-          fi
           echo "flutter build ipa --build-name=$VERSION_NAME --build-number=$BUILD_NUMBER"
           flutter build ipa --release \
             --build-name="$VERSION_NAME" \
             --build-number="$BUILD_NUMBER" \
             --export-options-plist="$HOME/export_options.plist"
           APP_PLIST="build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app/Info.plist"
-          if [ ! -f "$APP_PLIST" ]; then
-            echo "HATA: archive Info.plist bulunamadı"
-            exit 1
-          fi
           BUILT=$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP_PLIST")
-          echo "IPA CFBundleVersion=$BUILT (beklenen $BUILD_NUMBER)"
+          echo "IPA CFBundleVersion=$BUILT"
           if [ "$BUILT" != "$BUILD_NUMBER" ]; then
-            echo "HATA: IPA build numarası eşleşmiyor"
+            echo "HATA: IPA build numarası $BUILT != $BUILD_NUMBER"
             exit 1
           fi
           mkdir -p artifacts
-          cp build/ios/ipa/*.ipa artifacts/ || {
-            echo "IPA bulunamadı:"
-            find build/ios -type f \( -name "*.ipa" -o -name "*.xcarchive" \) 2>/dev/null || true
-            exit 1
-          }
-          ls -la artifacts/
+          cp build/ios/ipa/*.ipa artifacts/
+          ls -la build/ios/ipa/ artifacts/
+      - name: Publish TestFlight (skip if already uploaded)
+        script: |
+          set -e
+          BUILD_NUMBER=$(cat .ios_build_number)
+          ASC=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
+          TF=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
+          STORE_LATEST=0
+          for v in "$ASC" "$TF"; do
+            if [[ "$v" =~ ^[0-9]+$ ]] && [ "$v" -gt "$STORE_LATEST" ]; then STORE_LATEST=$v; fi
+          done
+          IPA=$(find build/ios/ipa -name '*.ipa' | head -1)
+          if [ -z "$IPA" ]; then echo "HATA: IPA yok"; exit 1; fi
+          echo "Yüklenecek build=$BUILD_NUMBER · App Store son=$STORE_LATEST"
+          if bash scripts/ios_resolve_build.sh should-upload "$BUILD_NUMBER" "$STORE_LATEST"; then
+            app-store-connect publish --path "$IPA" --testflight
+            echo "✓ TestFlight upload tamam (build $BUILD_NUMBER)"
+          else
+            echo "✓ Upload atlandı — build $BUILD_NUMBER zaten App Store Connect'te."
+            echo "  Retry kullanma; TestFlight'ta işlenmeyi bekle veya yeni build başlat."
+          fi
     artifacts:
       - build/ios/ipa/*.ipa
       - artifacts/*.ipa
-    publishing:
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
+    # publishing bloğu KALDIRILDI — çift upload / Retry 90189 önlenir; upload yukarıdaki script'te
