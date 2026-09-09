@@ -30,9 +30,16 @@ workflows:
       - name: Set up code signing
         script: |
           keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --platform IOS \
+            --create
+          keychain add-certificates
           xcode-project use-profiles
+          echo "=== Keychain (Distribution?) ==="
+          security find-identity -v -p codesigning
           if [ ! -f "$HOME/export_options.plist" ]; then
-            echo "export_options.plist oluşmadı — Codemagic UI'de App Store profili (com.bursaapp.mobile) kontrol edin"
+            echo "export_options.plist oluşmadı"
             exit 1
           fi
           plutil -p "$HOME/export_options.plist" || cat "$HOME/export_options.plist"
