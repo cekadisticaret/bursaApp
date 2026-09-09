@@ -31,6 +31,15 @@ workflows:
           /usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryUsageDescription 'Profil fotoğrafı seçmek için galeri erişimi gerekir.'" ios/Runner/Info.plist
       - name: Dependencies
         script: flutter pub get
+      - name: Auto increment iOS build number
+        script: |
+          set -e
+          VERSION_NAME=$(grep '^version:' pubspec.yaml | sed 's/version:[[:space:]]*//' | cut -d'+' -f1)
+          LATEST=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
+          NEXT=$((LATEST + 1))
+          echo "App Store son build: $LATEST → yeni CFBundleVersion: $NEXT"
+          perl -i -pe "s/^version: .*/version: ${VERSION_NAME}+${NEXT}/" pubspec.yaml
+          grep '^version:' pubspec.yaml
       - name: Set up code signing
         script: |
           keychain initialize
