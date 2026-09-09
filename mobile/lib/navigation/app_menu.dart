@@ -8,8 +8,10 @@ import '../screens/news_screen.dart';
 import '../screens/pharmacy_screen.dart';
 import '../screens/teleferik_screen.dart';
 import '../screens/utilities_screen.dart';
+import '../screens/visit_screen.dart';
 import '../screens/weekend_screen.dart';
 import '../shell/shell_scope.dart';
+import '../widgets/floating_tab_bar.dart';
 import 'app_routes.dart';
 
 void openMenuLink(BuildContext context, MenuLink item) {
@@ -25,15 +27,15 @@ void openMenuLink(BuildContext context, MenuLink item) {
       goTab(0);
       return;
     case '/yeme-icme':
-      goTab(3);
+      goTab(ShellTabs.food);
       return;
     case '/gezilecek':
-      goTab(2);
+      Navigator.of(context).push(appRoute(const VisitScreen()));
       return;
     case '/etrafimda':
     case '/harita':
     case '/rota':
-      goTab(1);
+      goTab(ShellTabs.explore);
       return;
     case '/arkadas-ara':
       Navigator.of(context).push(appRoute(const ActivityBuddyScreen()));

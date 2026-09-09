@@ -87,6 +87,49 @@ class BursaApi {
     return await _decode(res);
   }
 
+  /// Yürüyüş/araç rotası — web /api/route (OSRM) ile aynı.
+  Future<MapRouteResult> mapRoute({
+    required double fromLat,
+    required double fromLng,
+    required double toLat,
+    required double toLng,
+    String profile = 'foot',
+  }) async {
+    final uri = Uri.parse('${AppConfig.siteBase}/api/route').replace(
+      queryParameters: {
+        'from_lat': '$fromLat',
+        'from_lng': '$fromLng',
+        'to_lat': '$toLat',
+        'to_lng': '$toLng',
+        'profile': profile,
+      },
+    );
+    final res = await _client.get(uri, headers: {'Accept': 'application/json'});
+    final body = jsonDecode(utf8.decode(res.bodyBytes));
+    if (body is! Map<String, dynamic>) {
+      throw ApiException('Geçersiz rota yanıtı', res.statusCode);
+    }
+    if (res.statusCode >= 400 || body['ok'] != true) {
+      throw ApiException(body['error']?.toString() ?? 'Rota bulunamadı', res.statusCode);
+    }
+    final raw = body['coordinates'] as List? ?? [];
+    final points = <List<double>>[];
+    for (final item in raw) {
+      if (item is! List || item.length < 2) continue;
+      final lat = (item[0] as num).toDouble();
+      final lng = (item[1] as num).toDouble();
+      points.add([lat, lng]);
+    }
+    if (points.length < 2) {
+      throw ApiException('Rota koordinatı yok', 404);
+    }
+    return MapRouteResult(
+      points: points,
+      distanceM: (body['distance_m'] as num?)?.toDouble(),
+      durationS: (body['duration_s'] as num?)?.toDouble(),
+    );
+  }
+
   Future<AuthUser> login(String email, String password) async {
     final uri = Uri.parse('${AppConfig.apiBase}/auth/login');
     final res = await _client.post(
@@ -276,6 +319,14 @@ class ApiException implements Exception {
   final int statusCode;
   @override
   String toString() => message;
+}
+
+class MapRouteResult {
+  MapRouteResult({required this.points, this.distanceM, this.durationS});
+
+  final List<List<double>> points;
+  final double? distanceM;
+  final double? durationS;
 }
 
 class LikeResult {

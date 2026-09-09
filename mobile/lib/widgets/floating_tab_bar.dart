@@ -2,6 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../core/theme/app_theme.dart';
 
+/// Alt menü sekmeleri — 4 ikon + ortada FAB.
+abstract final class ShellTabs {
+  static const feed = 0;
+  static const explore = 1;
+  static const food = 2;
+  static const profile = 3;
+}
+
 class FloatingTabBar extends StatelessWidget {
   const FloatingTabBar({
     super.key,
@@ -17,7 +25,6 @@ class FloatingTabBar extends StatelessWidget {
   static const _tabs = [
     _TabItem(Icons.home_rounded, 'Akış'),
     _TabItem(Icons.map_rounded, 'Yakınım'),
-    _TabItem(Icons.landscape_rounded, 'Gez'),
     _TabItem(Icons.restaurant_rounded, 'Lezzet'),
     _TabItem(Icons.person_rounded, 'Profil'),
   ];
@@ -25,7 +32,6 @@ class FloatingTabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.paddingOf(context).bottom;
-    final visualIndex = index;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(14, 0, 14, 8 + bottom),
@@ -43,9 +49,11 @@ class FloatingTabBar extends StatelessWidget {
             ),
             child: Row(
               children: [
-                ...List.generate(3, (i) => _navItem(i, visualIndex, onChanged)),
+                Expanded(child: _navItem(ShellTabs.feed, index, onChanged)),
+                Expanded(child: _navItem(ShellTabs.explore, index, onChanged)),
                 const SizedBox(width: 58),
-                ...List.generate(2, (i) => _navItem(i + 3, visualIndex, onChanged)),
+                Expanded(child: _navItem(ShellTabs.food, index, onChanged)),
+                Expanded(child: _navItem(ShellTabs.profile, index, onChanged)),
               ],
             ),
           ),
@@ -78,25 +86,23 @@ class FloatingTabBar extends StatelessWidget {
   Widget _navItem(int tabIndex, int activeIndex, ValueChanged<int> tap) {
     final item = _tabs[tabIndex];
     final on = tabIndex == activeIndex;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => tap(tabIndex),
-        behavior: HitTestBehavior.opaque,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(item.icon, size: 22, color: on ? AppColors.lime : Colors.white.withValues(alpha: 0.55)),
-            const SizedBox(height: 2),
-            Text(
-              item.label,
-              style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
-                color: on ? AppColors.lime : Colors.white.withValues(alpha: 0.55),
-              ),
+    return GestureDetector(
+      onTap: () => tap(tabIndex),
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(item.icon, size: 22, color: on ? AppColors.lime : Colors.white.withValues(alpha: 0.55)),
+          const SizedBox(height: 2),
+          Text(
+            item.label,
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: on ? AppColors.lime : Colors.white.withValues(alpha: 0.55),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

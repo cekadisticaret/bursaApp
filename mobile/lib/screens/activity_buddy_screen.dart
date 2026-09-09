@@ -48,7 +48,8 @@ class _ActivityBuddyScreenState extends State<ActivityBuddyScreen> {
   Future<void> _createSeek() async {
     final auth = context.read<AuthStore>();
     if (!auth.isLoggedIn) {
-      await showLoginSheet(context);
+      final ok = await openAuthFlow(context);
+      if (!ok || !context.mounted) return;
       return;
     }
     if (_types.isEmpty) return;
@@ -153,7 +154,8 @@ class _ActivityBuddyScreenState extends State<ActivityBuddyScreen> {
   Future<void> _join(ActivitySeek row) async {
     final auth = context.read<AuthStore>();
     if (!auth.isLoggedIn) {
-      await showLoginSheet(context);
+      final ok = await openAuthFlow(context);
+      if (!ok || !context.mounted) return;
       return;
     }
     try {

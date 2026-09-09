@@ -8,10 +8,16 @@ class AuthStore extends ChangeNotifier {
   AuthStore();
 
   static const _tokenKey = 'bursaapp_token';
-  final _storage = const FlutterSecureStorage();
+  static const _emailKey = 'bursaapp_email';
+  static const _storage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device),
+  );
+
   BursaApi? _api;
   AuthUser? user;
   String? token;
+  String? savedEmail;
   bool loading = false;
 
   BursaApi get api {
@@ -22,23 +28,44 @@ class AuthStore extends ChangeNotifier {
 
   bool get isLoggedIn => user != null && token != null && token!.isNotEmpty;
 
+  void _bindApi() {
+    _api = BursaApi(token: token);
+  }
+
   Future<void> load() async {
-    token = await _storage.read(key: _tokenKey);
-    if (token != null && token!.isNotEmpty) {
-      try {
-        user = await api.me();
-      } catch (_) {
-        await logout();
-      }
-    }
+    loading = true;
     notifyListeners();
+    try {
+      token = await _storage.read(key: _tokenKey);
+      savedEmail = await _storage.read(key: _emailKey);
+      if (token != null && token!.isNotEmpty) {
+        _bindApi();
+        try {
+          user = await api.me();
+        } on ApiException catch (e) {
+          if (e.statusCode == 401 || e.statusCode == 403) {
+            await _clearSession();
+          }
+        } catch (_) {
+          // Ağ hatası — token saklı kalsın, bir sonraki yenilemede dene.
+        }
+      }
+    } finally {
+      loading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> refreshUser() async {
-    if (!isLoggedIn) return;
+    if (token == null || token!.isEmpty) return;
+    _bindApi();
     try {
       user = await api.me();
       notifyListeners();
+    } on ApiException catch (e) {
+      if (e.statusCode == 401 || e.statusCode == 403) {
+        await _clearSession();
+      }
     } catch (_) {}
   }
 
@@ -46,12 +73,17 @@ class AuthStore extends ChangeNotifier {
     loading = true;
     notifyListeners();
     try {
-      final u = await api.login(email.trim(), password);
+      final trimmed = email.trim();
+      _bindApi();
+      final u = await api.login(trimmed, password);
       token = api.token;
-      user = u;
-      if (token != null && token!.isNotEmpty) {
-        await _storage.write(key: _tokenKey, value: token);
+      if (token == null || token!.isEmpty) {
+        throw ApiException('Oturum oluşturulamadı', 500);
       }
+      user = u;
+      savedEmail = trimmed;
+      await _storage.write(key: _tokenKey, value: token);
+      await _storage.write(key: _emailKey, value: trimmed);
     } finally {
       loading = false;
       notifyListeners();
@@ -62,12 +94,17 @@ class AuthStore extends ChangeNotifier {
     loading = true;
     notifyListeners();
     try {
-      final u = await api.register(name.trim(), email.trim(), password);
+      final trimmed = email.trim();
+      _bindApi();
+      final u = await api.register(name.trim(), trimmed, password);
       token = api.token;
-      user = u;
-      if (token != null && token!.isNotEmpty) {
-        await _storage.write(key: _tokenKey, value: token);
+      if (token == null || token!.isEmpty) {
+        throw ApiException('Hesap oluşturuldu ama oturum açılamadı', 500);
       }
+      user = u;
+      savedEmail = trimmed;
+      await _storage.write(key: _tokenKey, value: token);
+      await _storage.write(key: _emailKey, value: trimmed);
     } finally {
       loading = false;
       notifyListeners();
@@ -107,10 +144,14 @@ class AuthStore extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    await _clearSession();
+    notifyListeners();
+  }
+
+  Future<void> _clearSession() async {
     token = null;
     user = null;
     _api = null;
     await _storage.delete(key: _tokenKey);
-    notifyListeners();
   }
 }

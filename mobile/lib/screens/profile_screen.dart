@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../core/api/models.dart';
 import '../core/auth/auth_store.dart';
 import '../core/config.dart';
 import '../core/theme/app_theme.dart';
@@ -13,6 +12,7 @@ import 'create_event_screen.dart';
 import 'leaders_screen.dart';
 import 'activity_buddy_screen.dart';
 import 'profile_settings_screen.dart';
+import 'visit_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -57,12 +57,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _openLogin() {
-    showLoginSheet(context, onSuccess: _refresh);
+  Future<void> _openLogin() async {
+    final ok = await openAuthFlow(context, onSuccess: _refresh);
+    if (ok && mounted) await _refresh();
   }
 
   void _openSettings() {
     Navigator.of(context).push(appRoute(const ProfileSettingsScreen()));
+  }
+
+  Future<void> _logout() async {
+    await context.read<AuthStore>().logout();
+    if (mounted) await _refresh();
   }
 
   @override
@@ -82,21 +88,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: CircleAvatar(
                 radius: 48,
                 backgroundColor: AppColors.accentDeep,
-                backgroundImage: user?.avatarUrl != null && user!.avatarUrl.isNotEmpty
+                backgroundImage: loggedIn && user?.avatarUrl != null && user!.avatarUrl.isNotEmpty
                     ? NetworkImage(user.avatarUrl.startsWith('http') ? user.avatarUrl : '${AppConfig.siteBase}${user.avatarUrl}')
                     : null,
-                child: user?.avatarUrl.isEmpty != false
+                child: !loggedIn || user?.avatarUrl.isEmpty != false
                     ? Text(
-                        (user?.name ?? 'B').substring(0, 1),
-                        style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+                        loggedIn ? (user?.name ?? 'B').substring(0, 1) : '👋',
+                        style: TextStyle(
+                          fontSize: loggedIn ? 32 : 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       )
                     : null,
               ),
             ),
             const SizedBox(height: 12),
-            Text(user?.name ?? 'Misafir', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
             Text(
-              loggedIn ? '${user?.points ?? 0} puan · Bursa rehberi' : 'Giriş yap, puan kazan',
+              loggedIn ? (user?.name ?? 'Üye') : 'Giriş',
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+            ),
+            Text(
+              loggedIn ? '${user?.points ?? 0} puan · Bursa rehberi' : 'Hesabınla devam et',
               style: const TextStyle(color: AppColors.muted),
             ),
             const SizedBox(height: 12),
@@ -105,26 +118,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   OutlinedButton(onPressed: _openSettings, child: const Text('Profili düzenle')),
-                  const SizedBox(width: 10),
-                  OutlinedButton(onPressed: () => auth.logout(), child: const Text('Çıkış')),
                 ],
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: _logout,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.coral,
+                    side: const BorderSide(color: AppColors.coral),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: const Text('Çıkış yap'),
+                ),
               ),
             ] else
               FilledButton(
                 onPressed: auth.loading ? null : _openLogin,
-                style: FilledButton.styleFrom(backgroundColor: AppColors.nav, foregroundColor: AppColors.lime),
-                child: Text(auth.loading ? 'Giriş yapılıyor…' : 'Giriş / Kayıt'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.nav,
+                  foregroundColor: AppColors.lime,
+                  minimumSize: const Size(double.infinity, 48),
+                ),
+                child: Text(auth.loading ? 'Yükleniyor…' : 'Giriş'),
               ),
           ],
         ),
         const SizedBox(height: 20),
         Row(
           children: [
+            Expanded(child: _QuickTile(icon: Icons.landscape_rounded, label: 'Gez', color: AppColors.accentDeep, onTap: () => Navigator.push(context, appRoute(const VisitScreen())))),
+            const SizedBox(width: 10),
             Expanded(child: _QuickTile(icon: Icons.add_circle, label: 'Etkinlik', color: AppColors.pink, onTap: () => requireAuth(context, () => Navigator.push(context, appRoute(const CreateEventScreen()))))),
             const SizedBox(width: 10),
             Expanded(child: _QuickTile(icon: Icons.emoji_events, label: 'Liderler', color: AppColors.sky, onTap: () => Navigator.push(context, appRoute(const LeadersScreen())))),
             const SizedBox(width: 10),
-            Expanded(child: _QuickTile(icon: Icons.groups_rounded, label: 'Partner ara', color: AppColors.accentDeep, onTap: () => Navigator.push(context, appRoute(const ActivityBuddyScreen())))),
+            Expanded(child: _QuickTile(icon: Icons.groups_rounded, label: 'Partner', color: AppColors.amber, onTap: () => Navigator.push(context, appRoute(const ActivityBuddyScreen())))),
           ],
         ),
         const SizedBox(height: 20),

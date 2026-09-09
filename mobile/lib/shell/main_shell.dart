@@ -7,7 +7,6 @@ import '../screens/explore_screen.dart';
 import '../screens/feed_screen.dart';
 import '../screens/food_screen.dart';
 import '../screens/profile_screen.dart';
-import '../screens/visit_screen.dart';
 import '../widgets/app_header.dart';
 import '../widgets/floating_tab_bar.dart';
 import '../widgets/login_sheet.dart';
@@ -22,12 +21,11 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  int _tab = 0;
+  int _tab = ShellTabs.feed;
 
   late final _pages = [
     const FeedScreen(),
     const ExploreScreen(),
-    const VisitScreen(),
     const FoodScreen(),
     const ProfileScreen(),
   ];
@@ -53,8 +51,8 @@ class _MainShellState extends State<MainShell> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: AppHeader(
-                  showGreeting: _tab == 0,
-                  onProfileTap: () => setState(() => _tab = 4),
+                  showGreeting: _tab == ShellTabs.feed,
+                  onProfileTap: () => setState(() => _tab = ShellTabs.profile),
                 ),
               ),
               Expanded(

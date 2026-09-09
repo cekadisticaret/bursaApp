@@ -663,6 +663,13 @@ def mobile_menu():
             ],
         },
         {
+            "title": "Gezi",
+            "icon": "visit",
+            "items": [
+                {"label": "Gezilecek yerler", "path": "/gezilecek"},
+            ],
+        },
+        {
             "title": "Konaklama & doğa",
             "icon": "nature",
             "items": [

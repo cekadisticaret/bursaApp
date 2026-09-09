@@ -21,7 +21,8 @@ class AppHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthStore>();
     final user = auth.user;
-    final first = (user?.name ?? 'Misafir').split(' ').first;
+    final loggedIn = auth.isLoggedIn;
+    final first = loggedIn ? user!.name.split(' ').first : 'BursaApp';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 6, 4, 10),
@@ -34,7 +35,7 @@ class AppHeader extends StatelessWidget {
               children: [
                 if (showGreeting) ...[
                   Text(
-                    'Merhaba, $first 👋',
+                    loggedIn ? 'Merhaba, $first 👋' : 'Merhaba 👋',
                     style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.muted),
                   ),
                   const SizedBox(height: 2),
