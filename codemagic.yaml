@@ -12,10 +12,12 @@ workflows:
         APP_STORE_APPLE_ID: "6809813024"
       flutter: stable
       xcode: latest
-      # Codemagic UI → Code signing identities'e yüklenen .p12 + App Store profili
+      # Codemagic UI → Code signing identities (reference name'ler birebir)
       ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.bursaapp.mobile
+        provisioning_profiles:
+          - bursaapp_appstore
+        certificates:
+          - bursaapp_dist
     scripts:
       - name: Bootstrap Flutter platforms
         script: |
