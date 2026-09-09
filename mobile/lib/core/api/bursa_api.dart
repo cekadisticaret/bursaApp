@@ -187,6 +187,42 @@ class BursaApi {
     await _decode(res);
   }
 
+  Future<Map<String, dynamic>> nobetciEczaneler() async {
+    final uri = Uri.parse('${AppConfig.apiBase}/mobile/nobetci-eczaneler');
+    final res = await _client.get(uri, headers: _headers);
+    return await _decode(res);
+  }
+
+  Future<Map<String, dynamic>> bursaNews() async {
+    final uri = Uri.parse('${AppConfig.apiBase}/mobile/news');
+    final res = await _client.get(uri, headers: _headers);
+    return await _decode(res);
+  }
+
+  Future<Map<String, dynamic>> bursasporFeed() async {
+    final uri = Uri.parse('${AppConfig.apiBase}/mobile/bursaspor');
+    final res = await _client.get(uri, headers: _headers);
+    return await _decode(res);
+  }
+
+  Future<Map<String, dynamic>> teleferikInfo() async {
+    final uri = Uri.parse('${AppConfig.apiBase}/mobile/teleferik');
+    final res = await _client.get(uri, headers: _headers);
+    return await _decode(res);
+  }
+
+  Future<Map<String, dynamic>> utilitiesInfo() async {
+    final uri = Uri.parse('${AppConfig.apiBase}/mobile/utilities');
+    final res = await _client.get(uri, headers: _headers);
+    return await _decode(res);
+  }
+
+  Future<Map<String, dynamic>> weekend() async {
+    final uri = Uri.parse('${AppConfig.apiBase}/discover/weekend');
+    final res = await _client.get(uri, headers: _headers);
+    return await _decode(res);
+  }
+
   Future<List<ActivitySeek>> okeySeeking() => activitySeeking(type: 'okey');
 
   void dispose() => _client.close();

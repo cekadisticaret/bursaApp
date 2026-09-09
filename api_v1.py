@@ -1,6 +1,8 @@
 """REST /api/v1 — site + gelecek native. Yalnız approved public."""
 from __future__ import annotations
 
+import json
+import os
 from datetime import datetime
 
 from flask import Blueprint, jsonify, request
@@ -11,6 +13,17 @@ from discover import FALLBACK_LAT, FALLBACK_LNG, nearby, today_bursa, tonight, w
 from models import Place, Review, SessionLocal, User, clamp_score, recompute_place_rating, review_dimension_avgs
 
 bp = Blueprint("api_v1", __name__, url_prefix="/api/v1")
+_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+
+
+def _mobile_data_json(filename: str) -> dict:
+    path = os.path.join(_DATA_DIR, filename)
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
 
 
 def _err(msg: str, code: int = 400):
@@ -843,3 +856,62 @@ def okey_seeking():
         return jsonify({"ok": True, "seeking": legacy})
     finally:
         db.close()
+
+
+@bp.route("/mobile/nobetci-eczaneler")
+def mobile_nobetci():
+    data = _mobile_data_json("nobetci_eczaneler.json")
+    if not data:
+        return jsonify({"ok": False, "pharmacies": [], "total": 0})
+    return jsonify(data)
+
+
+@bp.route("/mobile/news")
+def mobile_news():
+    data = _mobile_data_json("bursa_news.json")
+    articles = data.get("articles") or []
+    slim = [
+        {
+            "id": a.get("id"),
+            "title": a.get("title"),
+            "blurb": a.get("blurb"),
+            "published_at": a.get("published_at"),
+            "source": a.get("source"),
+            "img_url": a.get("img_url"),
+        }
+        for a in articles[:40]
+        if isinstance(a, dict)
+    ]
+    return jsonify({"ok": True, "generated_at": data.get("generated_at"), "articles": slim})
+
+
+@bp.route("/mobile/bursaspor")
+def mobile_bursaspor():
+    data = _mobile_data_json("bursaspor_feed.json")
+    news = data.get("news") or []
+    slim = [
+        {
+            "title": n.get("title"),
+            "blurb": n.get("blurb"),
+            "published_at": n.get("published_at"),
+            "source": n.get("source"),
+            "img_url": n.get("img_url"),
+        }
+        for n in news[:30]
+        if isinstance(n, dict)
+    ]
+    return jsonify({"ok": True, "desk": data.get("desk") or {}, "news": slim})
+
+
+@bp.route("/mobile/teleferik")
+def mobile_teleferik():
+    data = _mobile_data_json("teleferik.json")
+    if not data:
+        return jsonify({"ok": False})
+    return jsonify({"ok": True, **data})
+
+
+@bp.route("/mobile/utilities")
+def mobile_utilities():
+    data = _mobile_data_json("utilities.json")
+    return jsonify({"ok": True, "utilities": data if data else {}})

@@ -218,8 +218,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
           const Center(child: CircularProgressIndicator()),
         if (_selected != null)
           Positioned(
-            left: 16,
-            right: 16,
+            left: 0,
+            right: 0,
             bottom: 12,
             child: _PlaceSheet(
               place: _selected!,

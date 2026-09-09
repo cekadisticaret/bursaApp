@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../core/api/models.dart';
 import '../core/auth/auth_store.dart';
 import '../core/config.dart';
 import '../core/theme/app_theme.dart';
+import '../navigation/app_menu.dart';
+import '../navigation/app_routes.dart';
 import '../widgets/login_sheet.dart';
 import 'create_event_screen.dart';
 import 'leaders_screen.dart';
@@ -81,11 +82,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 20),
         Row(
           children: [
-            Expanded(child: _QuickTile(icon: Icons.add_circle, label: 'Etkinlik', color: AppColors.pink, onTap: () => requireAuth(context, () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const CreateEventScreen()))))),
+            Expanded(child: _QuickTile(icon: Icons.add_circle, label: 'Etkinlik', color: AppColors.pink, onTap: () => requireAuth(context, () => Navigator.push(context, appRoute(const CreateEventScreen()))))),
             const SizedBox(width: 10),
-            Expanded(child: _QuickTile(icon: Icons.emoji_events, label: 'Liderler', color: AppColors.sky, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const LeadersScreen())))),
+            Expanded(child: _QuickTile(icon: Icons.emoji_events, label: 'Liderler', color: AppColors.sky, onTap: () => Navigator.push(context, appRoute(const LeadersScreen())))),
             const SizedBox(width: 10),
-            Expanded(child: _QuickTile(icon: Icons.groups_rounded, label: 'Partner ara', color: AppColors.accentDeep, onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const ActivityBuddyScreen())))),
+            Expanded(child: _QuickTile(icon: Icons.groups_rounded, label: 'Partner ara', color: AppColors.accentDeep, onTap: () => Navigator.push(context, appRoute(const ActivityBuddyScreen())))),
           ],
         ),
         const SizedBox(height: 20),
@@ -157,7 +158,7 @@ class _MenuBlock extends StatelessWidget {
                 decoration: BoxDecoration(color: AppColors.bgSoft, borderRadius: BorderRadius.circular(10)),
                 child: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
               ),
-              onTap: () => launchUrl(Uri.parse('${AppConfig.siteBase}${item.path}'), mode: LaunchMode.externalApplication),
+              onTap: () => openMenuLink(context, item),
             ),
           ),
         ],

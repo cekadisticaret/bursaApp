@@ -12,6 +12,9 @@ class BursaApp extends StatelessWidget {
       title: 'BursaApp',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      scrollBehavior: const MaterialScrollBehavior().copyWith(
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+      ),
       home: const MainShell(),
     );
   }

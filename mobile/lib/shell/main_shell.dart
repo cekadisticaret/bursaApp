@@ -11,6 +11,8 @@ import '../screens/visit_screen.dart';
 import '../widgets/app_header.dart';
 import '../widgets/floating_tab_bar.dart';
 import '../widgets/login_sheet.dart';
+import '../shell/shell_scope.dart';
+import '../navigation/app_routes.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -33,7 +35,7 @@ class _MainShellState extends State<MainShell> {
   void _openCreate() {
     requireAuth(context, () {
       Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (_) => const CreateEventScreen()),
+        appRoute(const CreateEventScreen()),
       );
     });
   }
@@ -41,26 +43,29 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     context.watch<AuthStore>();
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: AppHeader(
-                showGreeting: _tab == 0,
-                onProfileTap: () => setState(() => _tab = 4),
+    return ShellScope(
+      goTab: (i) => setState(() => _tab = i),
+      child: Scaffold(
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: AppHeader(
+                  showGreeting: _tab == 0,
+                  onProfileTap: () => setState(() => _tab = 4),
+                ),
               ),
-            ),
-            Expanded(child: _pages[_tab]),
-          ],
+              Expanded(child: _pages[_tab]),
+            ],
+          ),
         ),
-      ),
-      bottomNavigationBar: FloatingTabBar(
-        index: _tab,
-        onChanged: (i) => setState(() => _tab = i),
-        onCreateTap: _openCreate,
+        bottomNavigationBar: FloatingTabBar(
+          index: _tab,
+          onChanged: (i) => setState(() => _tab = i),
+          onCreateTap: _openCreate,
+        ),
       ),
     );
   }
