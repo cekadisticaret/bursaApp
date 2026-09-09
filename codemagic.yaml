@@ -32,32 +32,28 @@ workflows:
       - name: Set up code signing
         script: |
           keychain initialize
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --platform IOS \
-            --create
           keychain add-certificates
           xcode-project use-profiles
-          echo "=== Keychain (Distribution?) ==="
+          echo "=== Keychain ==="
           security find-identity -v -p codesigning
           if [ ! -f "$HOME/export_options.plist" ]; then
             echo "export_options.plist oluşmadı"
             exit 1
           fi
-          plutil -p "$HOME/export_options.plist" || cat "$HOME/export_options.plist"
       - name: Analyze
         script: flutter analyze --no-fatal-infos --no-fatal-warnings
       - name: Build IPA
         script: |
           flutter build ipa --release --export-options-plist="$HOME/export_options.plist"
-          mkdir -p "$CM_BUILD_DIR/artifacts"
-          cp build/ios/ipa/*.ipa "$CM_BUILD_DIR/artifacts/" || {
+          mkdir -p artifacts
+          cp build/ios/ipa/*.ipa artifacts/ || {
             echo "IPA bulunamadı:"
             find build/ios -type f \( -name "*.ipa" -o -name "*.xcarchive" \) 2>/dev/null || true
             exit 1
           }
-          ls -la "$CM_BUILD_DIR/artifacts/"
+          ls -la artifacts/
     artifacts:
+      - build/ios/ipa/*.ipa
       - artifacts/*.ipa
     publishing:
       app_store_connect:
