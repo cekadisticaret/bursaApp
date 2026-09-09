@@ -28,8 +28,23 @@ class _FoodScreenState extends State<FoodScreen> {
     setState(() => _loading = true);
     try {
       final auth = context.read<AuthStore>();
-      final cat = _filterKey == 'fun2' ? 'fun' : _filterKey;
-      final rows = await auth.api.places(category: cat, limit: 24);
+      List<PlaceItem> rows;
+      switch (_filterKey) {
+        case 'live':
+          // Web /eglence?spec=Canlı müzik — geçersiz "live" kategorisi sinema vb. karıştırıyordu
+          final funRows = await auth.api.places(category: 'fun', spec: 'Canlı müzik', limit: 40);
+          final barRows = await auth.api.places(category: 'nightlife', sub: 'canli-muzik', limit: 40);
+          final seen = <String>{};
+          rows = [...funRows, ...barRows].where((p) {
+            if (p.slug.isEmpty || seen.contains(p.slug)) return false;
+            seen.add(p.slug);
+            return true;
+          }).toList();
+        case 'fun2':
+          rows = await auth.api.places(category: 'fun', limit: 24);
+        default:
+          rows = await auth.api.places(category: 'food', limit: 24);
+      }
       setState(() => _places = rows);
     } finally {
       if (mounted) setState(() => _loading = false);

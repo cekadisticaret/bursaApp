@@ -49,6 +49,7 @@ class BursaApi {
   Future<List<PlaceItem>> places({
     String? category,
     String? sub,
+    String? spec,
     String? q,
     int limit = 24,
     int offset = 0,
@@ -58,6 +59,7 @@ class BursaApi {
       'offset': '$offset',
       if (category != null) 'category': category,
       if (sub != null) 'sub': sub,
+      if (spec != null && spec.isNotEmpty) 'spec': spec,
       if (q != null && q.isNotEmpty) 'q': q,
     };
     final uri = Uri.parse('${AppConfig.apiBase}/places').replace(queryParameters: qp);
