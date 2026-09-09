@@ -120,7 +120,7 @@ class BursaApi {
     final uri = Uri.parse('${AppConfig.apiBase}/posts/$postId/like');
     final res = await _client.post(uri, headers: _headers);
     final data = await _decode(res);
-    return LikeResult(liked: data['liked'] == true, likes: (data['likes'] as num?)?.toInt() ?? 0);
+    return LikeResult(liked: data['liked'] == true, likes: _parseInt(data['likes']));
   }
 
   Future<void> createEvent(Map<String, dynamic> payload) async {
@@ -188,6 +188,14 @@ class BursaApi {
   Future<List<ActivitySeek>> okeySeeking() => activitySeeking(type: 'okey');
 
   void dispose() => _client.close();
+}
+
+int _parseInt(dynamic v, [int fallback = 0]) {
+  if (v == null) return fallback;
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  if (v is String) return int.tryParse(v) ?? fallback;
+  return fallback;
 }
 
 class ApiException implements Exception {

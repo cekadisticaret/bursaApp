@@ -1,3 +1,19 @@
+int _asInt(dynamic v, [int fallback = 0]) {
+  if (v == null) return fallback;
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  if (v is String) return int.tryParse(v) ?? fallback;
+  return fallback;
+}
+
+double? _asDouble(dynamic v) {
+  if (v == null) return null;
+  if (v is double) return v;
+  if (v is num) return v.toDouble();
+  if (v is String) return double.tryParse(v);
+  return null;
+}
+
 class AuthUser {
   AuthUser({
     required this.id,
@@ -16,11 +32,11 @@ class AuthUser {
   final String email;
 
   factory AuthUser.fromJson(Map<String, dynamic> j) => AuthUser(
-        id: (j['id'] as num?)?.toInt() ?? 0,
+        id: _asInt(j['id']),
         name: j['name']?.toString() ?? 'Üye',
         displayName: j['display_name']?.toString() ?? j['name']?.toString() ?? 'Üye',
         avatarUrl: j['avatar_url']?.toString() ?? '',
-        points: (j['loyalty_points'] as num?)?.toInt() ?? 0,
+        points: _asInt(j['loyalty_points']),
         email: j['email']?.toString() ?? '',
       );
 }
@@ -69,14 +85,14 @@ class FeedItem {
     final place = j['place'] as Map<String, dynamic>?;
     return FeedItem(
       kind: j['kind']?.toString() ?? 'post',
-      id: (j['id'] as num?)?.toInt() ?? 0,
+      id: _asInt(j['id']),
       ago: j['ago']?.toString() ?? '',
       user: FeedUser.fromJson(j['user'] as Map<String, dynamic>?),
       body: j['body']?.toString() ?? '',
       images: (j['images'] as List? ?? []).map((e) => e.toString()).where((e) => e.isNotEmpty).toList(),
-      likes: (j['likes'] as num?)?.toInt() ?? 0,
+      likes: _asInt(j['likes']),
       liked: j['liked'] == true,
-      comments: (j['comments'] as num?)?.toInt() ?? 0,
+      comments: _asInt(j['comments']),
       placeTitle: place?['title']?.toString(),
       placeSlug: place?['slug']?.toString(),
     );
@@ -109,7 +125,7 @@ class EventItem {
         startsAtLabel: j['starts_at_label']?.toString() ?? '',
         imgUrl: j['img_url']?.toString() ?? '',
         ilce: j['ilce']?.toString() ?? '',
-        going: (j['going'] as num?)?.toInt() ?? 0,
+        going: _asInt(j['going']),
       );
 }
 
@@ -121,6 +137,7 @@ class FeedResponse {
 
   factory FeedResponse.fromJson(Map<String, dynamic> j) => FeedResponse(
         feed: (j['feed'] as List? ?? [])
+            .where((e) => e is Map && e['kind'] != 'buddy_promo')
             .map((e) => FeedItem.fromJson(e as Map<String, dynamic>))
             .toList(),
         events: (j['events'] as List? ?? [])
@@ -160,8 +177,8 @@ class PlaceItem {
         ilce: j['ilce']?.toString() ?? '',
         blurb: j['blurb']?.toString() ?? '',
         imgUrl: j['img_url']?.toString() ?? '',
-        lat: (j['lat'] as num?)?.toDouble(),
-        lng: (j['lng'] as num?)?.toDouble(),
+        lat: _asDouble(j['lat']),
+        lng: _asDouble(j['lng']),
         subcategory: j['subcategory']?.toString() ?? j['subcategory_label']?.toString() ?? '',
       );
 }
@@ -204,10 +221,10 @@ class LeaderRow {
   factory LeaderRow.fromJson(Map<String, dynamic> j) {
     final u = j['user'] as Map<String, dynamic>? ?? {};
     return LeaderRow(
-      rank: (j['rank'] as num?)?.toInt() ?? 0,
+      rank: _asInt(j['rank']),
       name: u['name']?.toString() ?? 'Üye',
       avatarUrl: u['avatar_url']?.toString() ?? '',
-      points: (u['points'] as num?)?.toInt() ?? 0,
+      points: _asInt(u['points']),
     );
   }
 }
@@ -269,7 +286,7 @@ class ActivitySeek {
   final int hostPoints;
 
   factory ActivitySeek.fromJson(Map<String, dynamic> j) => ActivitySeek(
-        id: (j['id'] as num?)?.toInt() ?? 0,
+        id: _asInt(j['id']),
         activityType: j['activity_type']?.toString() ?? j['type']?.toString() ?? 'other',
         activityLabel: j['activity_label']?.toString() ?? '',
         emoji: j['emoji']?.toString() ?? '✨',
@@ -279,14 +296,14 @@ class ActivitySeek {
         venue: j['venue']?.toString() ?? '',
         timeLabel: j['time_label']?.toString() ?? '',
         note: j['note']?.toString() ?? '',
-        pointsMin: (j['points_min'] as num?)?.toInt() ?? 0,
-        slotsNeeded: (j['slots_needed'] as num?)?.toInt() ?? 1,
-        spotsLeft: (j['spots_left'] as num?)?.toInt() ?? 1,
+        pointsMin: _asInt(j['points_min']),
+        slotsNeeded: _asInt(j['slots_needed'], 1),
+        spotsLeft: _asInt(j['spots_left'], 1),
         joined: j['joined'] == true,
         pending: j['pending'] == true,
         isMine: j['is_mine'] == true,
         contactHint: j['contact_hint']?.toString() ?? '',
-        hostPoints: (j['host_points'] as num?)?.toInt() ?? 0,
+        hostPoints: _asInt(j['host_points']),
       );
 }
 

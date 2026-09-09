@@ -576,7 +576,8 @@ def _buddy_promo_item(slot: int) -> dict:
     line = copy_pool[slot % len(copy_pool)]
     return {
         "kind": "buddy_promo",
-        "id": f"buddy-{slot}",
+        # Mobil API int bekler; string id JSON parse hatası veriyordu.
+        "id": -(slot + 1),
         "emoji": meta["emoji"],
         "activity_type": key,
         "activity_label": meta["label"],
