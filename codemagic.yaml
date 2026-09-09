@@ -36,19 +36,15 @@ workflows:
           set -e
           VERSION_NAME=$(grep '^version:' pubspec.yaml | sed 's/version:[[:space:]]*//' | cut -d'+' -f1)
           LOCAL_BUILD=$(grep '^version:' pubspec.yaml | sed 's/version:[[:space:]]*//' | cut -d'+' -f2)
-          LATEST=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || true)
-          if ! [[ "$LATEST" =~ ^[0-9]+$ ]]; then
-            LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || true)
-          fi
-          if ! [[ "$LATEST" =~ ^[0-9]+$ ]]; then
-            echo "App Store build sorgusu boş — yüklü build 1 varsayılıyor"
-            LATEST=1
-          fi
+          if ! [[ "$LOCAL_BUILD" =~ ^[0-9]+$ ]]; then LOCAL_BUILD=0; fi
+          LATEST=$LOCAL_BUILD
+          ASC=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || true)
+          TF=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || true)
+          for v in "$ASC" "$TF"; do
+            if [[ "$v" =~ ^[0-9]+$ ]] && [ "$v" -gt "$LATEST" ]; then LATEST=$v; fi
+          done
           NEXT=$((LATEST + 1))
-          if [[ "$LOCAL_BUILD" =~ ^[0-9]+$ ]] && [ "$NEXT" -le "$LOCAL_BUILD" ]; then
-            NEXT=$((LOCAL_BUILD + 1))
-          fi
-          echo "Son App Store build: $LATEST · pubspec: +$LOCAL_BUILD · kullanılacak: +$NEXT"
+          echo "App Store=$ASC · TestFlight=$TF · pubspec=+$LOCAL_BUILD · max=$LATEST · NEXT=+$NEXT"
           perl -i -pe "s/^version: .*/version: ${VERSION_NAME}+${NEXT}/" pubspec.yaml
           grep '^version:' pubspec.yaml
           echo "IOS_VERSION_NAME=$VERSION_NAME" >> "$CM_ENV"
@@ -68,7 +64,20 @@ workflows:
         script: flutter analyze --no-fatal-infos --no-fatal-warnings
       - name: Build IPA
         script: |
-          flutter build ipa --release --export-options-plist="$HOME/export_options.plist"
+          set -e
+          # CM_ENV — önceki adımdan build numarası
+          if [ -f "$CM_ENV" ]; then . "$CM_ENV"; fi
+          VERSION_NAME="${IOS_VERSION_NAME:-$(grep '^version:' pubspec.yaml | sed 's/version:[[:space:]]*//' | cut -d'+' -f1)}"
+          BUILD_NUMBER="${IOS_BUILD_NUMBER:-$(grep '^version:' pubspec.yaml | sed 's/version:[[:space:]]*//' | cut -d'+' -f2)}"
+          echo "flutter build ipa --build-name=$VERSION_NAME --build-number=$BUILD_NUMBER"
+          flutter build ipa --release \
+            --build-name="$VERSION_NAME" \
+            --build-number="$BUILD_NUMBER" \
+            --export-options-plist="$HOME/export_options.plist"
+          APP_PLIST="build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app/Info.plist"
+          if [ -f "$APP_PLIST" ]; then
+            echo "IPA CFBundleVersion=$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP_PLIST")"
+          fi
           mkdir -p artifacts
           cp build/ios/ipa/*.ipa artifacts/ || {
             echo "IPA bulunamadı:"
