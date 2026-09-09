@@ -14,30 +14,18 @@ class FloatingTabBar extends StatelessWidget {
   final ValueChanged<int> onChanged;
   final VoidCallback onCreateTap;
 
-  static const _left = [
+  static const _tabs = [
     _TabItem(Icons.home_rounded, 'Akış'),
     _TabItem(Icons.map_rounded, 'Yakınım'),
-  ];
-  static const _right = [
     _TabItem(Icons.landscape_rounded, 'Gez'),
     _TabItem(Icons.restaurant_rounded, 'Lezzet'),
     _TabItem(Icons.person_rounded, 'Profil'),
   ];
 
-  int _toPageIndex(int visual) {
-    if (visual < 2) return visual;
-    return visual - 1;
-  }
-
-  int _fromPageIndex(int page) {
-    if (page < 2) return page;
-    return page + 1;
-  }
-
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.paddingOf(context).bottom;
-    final visualIndex = _fromPageIndex(index);
+    final visualIndex = index;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(14, 0, 14, 8 + bottom),
@@ -47,7 +35,7 @@ class FloatingTabBar extends StatelessWidget {
         children: [
           Container(
             margin: const EdgeInsets.only(top: 18),
-            padding: const EdgeInsets.fromLTRB(8, 12, 8, 10),
+            padding: const EdgeInsets.fromLTRB(6, 12, 6, 10),
             decoration: BoxDecoration(
               color: AppColors.nav,
               borderRadius: BorderRadius.circular(AppRadii.lg),
@@ -55,12 +43,9 @@ class FloatingTabBar extends StatelessWidget {
             ),
             child: Row(
               children: [
-                ...List.generate(2, (i) => _navItem(i, visualIndex, onChanged)),
-                const Expanded(child: SizedBox(width: 56)),
-                ...List.generate(3, (i) {
-                  final vi = i + 3;
-                  return _navItem(vi, visualIndex, (v) => onChanged(_toPageIndex(v)));
-                }),
+                ...List.generate(3, (i) => _navItem(i, visualIndex, onChanged)),
+                const SizedBox(width: 58),
+                ...List.generate(2, (i) => _navItem(i + 3, visualIndex, onChanged)),
               ],
             ),
           ),
@@ -90,13 +75,12 @@ class FloatingTabBar extends StatelessWidget {
     );
   }
 
-  Widget _navItem(int visualIndex, int activeVisual, ValueChanged<int> tap) {
-    final items = visualIndex < 2 ? _left : _right;
-    final item = items[visualIndex < 2 ? visualIndex : visualIndex - 3];
-    final on = visualIndex == activeVisual;
+  Widget _navItem(int tabIndex, int activeIndex, ValueChanged<int> tap) {
+    final item = _tabs[tabIndex];
+    final on = tabIndex == activeIndex;
     return Expanded(
       child: GestureDetector(
-        onTap: () => tap(visualIndex),
+        onTap: () => tap(tabIndex),
         behavior: HitTestBehavior.opaque,
         child: Column(
           mainAxisSize: MainAxisSize.min,

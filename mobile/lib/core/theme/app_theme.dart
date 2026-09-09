@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const bg = Color(0xFFDCE8DC);
-  static const bgSoft = Color(0xFFE8F0E6);
+  // Web --bg (#F6F3EC) ve mobil kabuk (#f5f5f7) ile hizalı
+  static const bg = Color(0xFFF6F3EC);
+  static const bgSoft = Color(0xFFF5F5F7);
   static const bgDeep = Color(0xFF3D5A4C);
   static const nav = Color(0xFF1A2E24);
   static const card = Color(0xFFFFFFFF);

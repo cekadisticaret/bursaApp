@@ -116,29 +116,25 @@ class _Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final letter = name.isNotEmpty ? name[0].toUpperCase() : 'B';
+    final hasUrl = url != null && url!.isNotEmpty;
     return Container(
-      width: 46,
-      height: 46,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(color: AppColors.lime, width: 2.5),
         boxShadow: AppShadows.card,
       ),
-      clipBehavior: Clip.antiAlias,
-      child: url != null && url!.isNotEmpty
-          ? CachedNetworkImage(
-              imageUrl: url!.startsWith('http') ? url! : '${AppConfig.siteBase}$url',
-              fit: BoxFit.cover,
-              errorWidget: (_, __, ___) => _letter(letter),
-            )
-          : _letter(letter),
+      child: CircleAvatar(
+        radius: 23,
+        backgroundColor: AppColors.accentDeep,
+        foregroundImage: hasUrl
+            ? CachedNetworkImageProvider(
+                url!.startsWith('http') ? url! : '${AppConfig.siteBase}$url',
+              )
+            : null,
+        child: hasUrl
+            ? null
+            : Text(letter, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18)),
+      ),
     );
   }
-
-  Widget _letter(String letter) => ColoredBox(
-        color: AppColors.accentDeep,
-        child: Center(
-          child: Text(letter, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18)),
-        ),
-      );
 }

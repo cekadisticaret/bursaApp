@@ -19,14 +19,27 @@ class ExploreScreen extends StatefulWidget {
 }
 
 class _ExploreScreenState extends State<ExploreScreen> {
+  // Web MAP_CATEGORIES ile aynı sıra
   static const _filters = [
-    ('food', 'Kafe'),
-    ('visit', 'Gez'),
-    ('fun', 'Eğlence'),
+    ('', 'Tümü'),
+    ('food', 'Restoran'),
+    ('cafe', 'Cafe'),
+    ('visit', 'Gezilecek'),
+    ('hotel', 'Otel'),
+    ('camp', 'Kamp'),
+    ('event', 'Etkinlik'),
     ('concert', 'Konser'),
+    ('market', 'Market'),
+    ('shop', 'Alışveriş'),
+    ('vet', 'Veteriner'),
+    ('hospital', 'Hastane'),
+    ('school', 'Okul'),
+    ('wedding', 'Düğün salonu'),
+    ('nightlife', 'Gece hayatı'),
   ];
 
-  String _filter = 'food';
+  String _filter = '';
+  List<PlaceItem> _allNearby = [];
   List<PlaceItem> _places = [];
   PlaceItem? _selected;
   LatLng _center = const LatLng(40.1885, 29.0610);
@@ -55,15 +68,27 @@ class _ExploreScreenState extends State<ExploreScreen> {
     } catch (_) {}
   }
 
+  bool _matchesFilter(PlaceItem p) {
+    if (_filter.isEmpty) return true;
+    if (_filter == 'cafe') return p.category == 'food' && p.subcategory == 'cafe';
+    return p.category == _filter;
+  }
+
+  void _applyFilter() {
+    final filtered = _allNearby.where(_matchesFilter).toList();
+    setState(() {
+      _places = filtered;
+      _selected = filtered.isNotEmpty ? filtered.first : null;
+    });
+  }
+
   Future<void> _loadPlaces() async {
     setState(() => _loading = true);
     try {
       final auth = context.read<AuthStore>();
       final nearby = await auth.api.nearby(lat: _center.latitude, lng: _center.longitude, r: 2500);
-      setState(() {
-        _places = nearby.where((p) => p.category == _filter).toList();
-        _selected = _places.isNotEmpty ? _places.first : null;
-      });
+      setState(() => _allNearby = nearby);
+      _applyFilter();
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -71,12 +96,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadii.lg),
-            child: FlutterMap(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+              child: FlutterMap(
               mapController: _mapController,
               options: MapOptions(
                 initialCenter: _center,
@@ -155,8 +182,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
         ),
         Positioned(
           top: 8,
-          left: 16,
-          right: 16,
+          left: 0,
+          right: 0,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -181,7 +208,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 selected: _filter,
                 onSelected: (v) {
                   setState(() => _filter = v);
-                  _loadPlaces();
+                  _applyFilter();
                 },
               ),
             ],
@@ -203,7 +230,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
               },
             ),
           ),
-      ],
+        ],
+      ),
     );
   }
 }
