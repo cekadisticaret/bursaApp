@@ -796,6 +796,13 @@ def kvkk_page():
     return render_template("kvkk.html", nav="kvkk", seo=for_kvkk())
 
 
+@app.route("/gizlilik")
+def gizlilik_page():
+    from seo import for_gizlilik
+
+    return render_template("gizlilik.html", nav="gizlilik", seo=for_gizlilik())
+
+
 @app.route("/iletisim")
 def iletisim_page():
     from seo import for_iletisim
