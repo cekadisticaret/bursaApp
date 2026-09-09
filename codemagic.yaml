@@ -31,10 +31,20 @@ workflows:
       - name: Analyze
         script: flutter analyze --no-fatal-infos --no-fatal-warnings
       - name: Build IPA
-        script: flutter build ipa --release
+        script: |
+          flutter build ipa --release
+          mkdir -p "$CM_BUILD_DIR/artifacts"
+          cp build/ios/ipa/*.ipa "$CM_BUILD_DIR/artifacts/" || {
+            echo "IPA bulunamadı:"
+            find build/ios -type f \( -name "*.ipa" -o -name "*.xcarchive" \) 2>/dev/null || true
+            exit 1
+          }
+          ls -la "$CM_BUILD_DIR/artifacts/"
     artifacts:
-      - build/ios/ipa/*.ipa
+      - artifacts/*.ipa
     publishing:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
+        beta_groups:
+          - Ceka Testciler
