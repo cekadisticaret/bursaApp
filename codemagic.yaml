@@ -35,11 +35,24 @@ workflows:
         script: |
           set -e
           VERSION_NAME=$(grep '^version:' pubspec.yaml | sed 's/version:[[:space:]]*//' | cut -d'+' -f1)
-          LATEST=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
+          LOCAL_BUILD=$(grep '^version:' pubspec.yaml | sed 's/version:[[:space:]]*//' | cut -d'+' -f2)
+          LATEST=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || true)
+          if ! [[ "$LATEST" =~ ^[0-9]+$ ]]; then
+            LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || true)
+          fi
+          if ! [[ "$LATEST" =~ ^[0-9]+$ ]]; then
+            echo "App Store build sorgusu boş — yüklü build 1 varsayılıyor"
+            LATEST=1
+          fi
           NEXT=$((LATEST + 1))
-          echo "App Store son build: $LATEST → yeni CFBundleVersion: $NEXT"
+          if [[ "$LOCAL_BUILD" =~ ^[0-9]+$ ]] && [ "$NEXT" -le "$LOCAL_BUILD" ]; then
+            NEXT=$((LOCAL_BUILD + 1))
+          fi
+          echo "Son App Store build: $LATEST · pubspec: +$LOCAL_BUILD · kullanılacak: +$NEXT"
           perl -i -pe "s/^version: .*/version: ${VERSION_NAME}+${NEXT}/" pubspec.yaml
           grep '^version:' pubspec.yaml
+          echo "IOS_VERSION_NAME=$VERSION_NAME" >> "$CM_ENV"
+          echo "IOS_BUILD_NUMBER=$NEXT" >> "$CM_ENV"
       - name: Set up code signing
         script: |
           keychain initialize
