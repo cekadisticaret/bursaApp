@@ -29,6 +29,16 @@ class AppHeader extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(11),
+            child: Image.asset(
+              'assets/branding/app_icon.png',
+              width: 38,
+              height: 38,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

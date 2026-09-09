@@ -24,6 +24,7 @@ workflows:
         script: |
           cd mobile
           flutter pub get
+          dart run flutter_launcher_icons
       - name: Run analyzer
         script: |
           cd mobile
