@@ -206,19 +206,32 @@ class _ActivityBuddyScreenState extends State<ActivityBuddyScreen> {
             ),
           ),
           Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : _rows.isEmpty
-                    ? const Center(child: Text('Açık ilan yok — ilk ilanı sen ver', style: TextStyle(color: AppColors.muted)))
-                    : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-                        itemCount: _rows.length,
-                        itemBuilder: (context, i) => _SeekCard(
-                          row: _rows[i],
-                          onJoin: () => _join(_rows[i]),
-                          onLeave: () => _leave(_rows[i]),
+            child: RefreshIndicator(
+              onRefresh: _load,
+              child: _loading
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                      children: const [SizedBox(height: 120), Center(child: CircularProgressIndicator())],
+                    )
+                  : _rows.isEmpty
+                      ? ListView(
+                          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                          children: const [
+                            SizedBox(height: 120),
+                            Center(child: Text('Açık ilan yok — ilk ilanı sen ver', style: TextStyle(color: AppColors.muted))),
+                          ],
+                        )
+                      : ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                          itemCount: _rows.length,
+                          itemBuilder: (context, i) => _SeekCard(
+                            row: _rows[i],
+                            onJoin: () => _join(_rows[i]),
+                            onLeave: () => _leave(_rows[i]),
+                          ),
                         ),
-                      ),
+            ),
           ),
         ],
       ),

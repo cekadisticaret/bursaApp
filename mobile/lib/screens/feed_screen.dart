@@ -90,6 +90,7 @@ class _FeedScreenState extends State<FeedScreen> {
     return RefreshIndicator(
       onRefresh: () => _load(refresh: true),
       child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
         children: [
           _SearchBar(),

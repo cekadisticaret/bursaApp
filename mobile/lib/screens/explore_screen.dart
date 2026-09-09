@@ -9,6 +9,7 @@ import '../core/api/models.dart';
 import '../core/auth/auth_store.dart';
 import '../core/config.dart';
 import '../core/theme/app_theme.dart';
+import '../widgets/app_refresh.dart';
 import '../widgets/category_pills.dart';
 
 class ExploreScreen extends StatefulWidget {
@@ -96,42 +97,91 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return appRefreshBox(
+      onRefresh: _bootstrap,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: _ExploreBody(
+        mapController: _mapController,
+        center: _center,
+        filter: _filter,
+        filters: _filters,
+        places: _places,
+        selected: _selected,
+        loading: _loading,
+        onFilter: (v) {
+          setState(() => _filter = v);
+          _applyFilter();
+        },
+        onTapMap: (point) {
+          const dist = Distance();
+          PlaceItem? hit;
+          var best = double.infinity;
+          for (final p in _places) {
+            if (p.lat == null || p.lng == null) continue;
+            final d = dist.as(LengthUnit.Meter, point, LatLng(p.lat!, p.lng!));
+            if (d < best) {
+              best = d;
+              hit = p;
+            }
+          }
+          setState(() {
+            if (hit != null && best < 120) {
+              _selected = hit;
+            } else {
+              _selected = null;
+            }
+          });
+        },
+        onRoute: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Rota oluşturuluyor…')),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ExploreBody extends StatelessWidget {
+  const _ExploreBody({
+    required this.mapController,
+    required this.center,
+    required this.filter,
+    required this.filters,
+    required this.places,
+    required this.selected,
+    required this.loading,
+    required this.onFilter,
+    required this.onTapMap,
+    required this.onRoute,
+  });
+
+  final MapController mapController;
+  final LatLng center;
+  final String filter;
+  final List<(String, String)> filters;
+  final List<PlaceItem> places;
+  final PlaceItem? selected;
+  final bool loading;
+  final ValueChanged<String> onFilter;
+  final void Function(LatLng point) onTapMap;
+  final VoidCallback onRoute;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: MediaQuery.sizeOf(context).height - 160,
       child: Stack(
         children: [
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(AppRadii.lg),
               child: FlutterMap(
-              mapController: _mapController,
+              mapController: mapController,
               options: MapOptions(
-                initialCenter: _center,
+                initialCenter: center,
                 initialZoom: 13,
-                onTap: (event, point) {
-                  const dist = Distance();
-                  PlaceItem? hit;
-                  var best = double.infinity;
-                  for (final p in _places) {
-                    if (p.lat == null || p.lng == null) continue;
-                    final d = dist.as(
-                      LengthUnit.Meter,
-                      point,
-                      LatLng(p.lat!, p.lng!),
-                    );
-                    if (d < best) {
-                      best = d;
-                      hit = p;
-                    }
-                  }
-                  setState(() {
-                    if (hit != null && best < 120) {
-                      _selected = hit;
-                    } else {
-                      _selected = null;
-                    }
-                  });
-                },
+                onTap: (event, point) => onTapMap(point),
               ),
               children: [
                 TileLayer(
@@ -141,7 +191,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 MarkerLayer(
                   markers: [
                     Marker(
-                      point: _center,
+                      point: center,
                       width: 36,
                       height: 36,
                       child: Container(
@@ -154,8 +204,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         child: const Icon(Icons.person_pin_circle, color: AppColors.ink, size: 20),
                       ),
                     ),
-                    ..._places.where((p) => p.lat != null && p.lng != null).map((p) {
-                      final sel = _selected?.slug == p.slug;
+                    ...places.where((p) => p.lat != null && p.lng != null).map((p) {
+                      final sel = selected?.slug == p.slug;
                       final size = sel ? 44.0 : 36.0;
                       return Marker(
                         point: LatLng(p.lat!, p.lng!),
@@ -191,7 +241,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
                   color: AppColors.card.withValues(alpha: 0.94),
-                  borderRadius: BorderRadius.circular(AppRadii.md),
+                  borderRadius: BorderRadius.circular(AppRadii.lg),
                   boxShadow: AppShadows.card,
                 ),
                 child: const Row(
@@ -204,30 +254,23 @@ class _ExploreScreenState extends State<ExploreScreen> {
               ),
               const SizedBox(height: 10),
               CategoryPills(
-                items: _filters,
-                selected: _filter,
-                onSelected: (v) {
-                  setState(() => _filter = v);
-                  _applyFilter();
-                },
+                items: filters,
+                selected: filter,
+                onSelected: onFilter,
               ),
             ],
           ),
         ),
-        if (_loading)
+        if (loading)
           const Center(child: CircularProgressIndicator()),
-        if (_selected != null)
+        if (selected != null)
           Positioned(
             left: 0,
             right: 0,
             bottom: 12,
             child: _PlaceSheet(
-              place: _selected!,
-              onRoute: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Rota oluşturuluyor…')),
-                );
-              },
+              place: selected!,
+              onRoute: onRoute,
             ),
           ),
         ],

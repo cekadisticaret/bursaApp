@@ -27,6 +27,8 @@ workflows:
           sed -i '' 's/PRODUCT_BUNDLE_IDENTIFIER = .*/PRODUCT_BUNDLE_IDENTIFIER = com.bursaapp.mobile;/g' ios/Runner.xcodeproj/project.pbxproj
           /usr/libexec/PlistBuddy -c "Add :NSLocationWhenInUseUsageDescription string 'Yakınındaki mekanları haritada göstermek için konum kullanılır.'" ios/Runner/Info.plist 2>/dev/null || \
           /usr/libexec/PlistBuddy -c "Set :NSLocationWhenInUseUsageDescription 'Yakınındaki mekanları haritada göstermek için konum kullanılır.'" ios/Runner/Info.plist
+          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string 'Profil fotoğrafı seçmek için galeri erişimi gerekir.'" ios/Runner/Info.plist 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryUsageDescription 'Profil fotoğrafı seçmek için galeri erişimi gerekir.'" ios/Runner/Info.plist
       - name: Dependencies
         script: flutter pub get
       - name: Set up code signing

@@ -57,6 +57,7 @@ class _LoginSheetState extends State<LoginSheet> {
       if (!mounted) return;
       Navigator.pop(context);
       widget.onSuccess?.call();
+      auth.refreshUser();
     } catch (e) {
       setState(() => _error = e.toString());
     }

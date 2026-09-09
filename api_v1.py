@@ -545,7 +545,7 @@ def events_upcoming_api():
         db.close()
 
 
-@bp.route("/me")
+@bp.route("/me", methods=["GET", "PATCH"])
 @login_required
 def me_api():
     user = load_user()
@@ -556,9 +556,60 @@ def me_api():
         u = db.get(User, user.id)
         if not u:
             return _err("bulunamadı", 404)
+        if request.method == "PATCH":
+            body = _json()
+            action = (body.get("action") or "profile").strip()
+            if action == "profile":
+                name = (body.get("name") or "").strip()
+                if name:
+                    if len(name) < 2:
+                        return _err("ad en az 2 karakter", 400)
+                    u.name = name
+                if "show_full_name" in body:
+                    u.show_full_name = bool(body.get("show_full_name"))
+            elif action == "password":
+                cur = body.get("current_password") or ""
+                new = body.get("new_password") or ""
+                new2 = body.get("new_password2") or ""
+                if not verify_password(cur, u.password_hash):
+                    return _err("mevcut şifre yanlış", 400)
+                if len(new) < 8:
+                    return _err("yeni şifre en az 8 karakter", 400)
+                if new != new2:
+                    return _err("yeni şifreler eşleşmiyor", 400)
+                u.password_hash = hash_password(new)
+            else:
+                return _err("geçersiz işlem", 400)
+            db.commit()
+            db.refresh(u)
         data = u.public()
         data["counts"] = follow_counts(db, u.id)
         return jsonify({"ok": True, "user": data})
+    finally:
+        db.close()
+
+
+@bp.route("/me/avatar", methods=["POST"])
+@login_required
+def me_avatar_api():
+    from admin_forms import save_upload
+
+    user = load_user()
+    db = SessionLocal()
+    try:
+        u = db.get(User, user.id)
+        if not u:
+            return _err("bulunamadı", 404)
+        f = request.files.get("avatar")
+        path, err = save_upload(f, category="avatar")
+        if err:
+            return _err(err, 400)
+        if not path:
+            return _err("geçerli bir görsel seç", 400)
+        u.avatar_url = path
+        db.commit()
+        db.refresh(u)
+        return jsonify({"ok": True, "user": u.public()})
     finally:
         db.close()
 

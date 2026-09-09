@@ -20,7 +20,7 @@ class AuthStore extends ChangeNotifier {
     return _api!;
   }
 
-  bool get isLoggedIn => token != null && token!.isNotEmpty;
+  bool get isLoggedIn => user != null && token != null && token!.isNotEmpty;
 
   Future<void> load() async {
     token = await _storage.read(key: _tokenKey);
@@ -34,13 +34,24 @@ class AuthStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> refreshUser() async {
+    if (!isLoggedIn) return;
+    try {
+      user = await api.me();
+      notifyListeners();
+    } catch (_) {}
+  }
+
   Future<void> login(String email, String password) async {
     loading = true;
     notifyListeners();
     try {
-      user = await api.login(email.trim(), password);
+      final u = await api.login(email.trim(), password);
       token = api.token;
-      await _storage.write(key: _tokenKey, value: token);
+      user = u;
+      if (token != null && token!.isNotEmpty) {
+        await _storage.write(key: _tokenKey, value: token);
+      }
     } finally {
       loading = false;
       notifyListeners();
@@ -51,13 +62,48 @@ class AuthStore extends ChangeNotifier {
     loading = true;
     notifyListeners();
     try {
-      user = await api.register(name.trim(), email.trim(), password);
+      final u = await api.register(name.trim(), email.trim(), password);
       token = api.token;
-      await _storage.write(key: _tokenKey, value: token);
+      user = u;
+      if (token != null && token!.isNotEmpty) {
+        await _storage.write(key: _tokenKey, value: token);
+      }
     } finally {
       loading = false;
       notifyListeners();
     }
+  }
+
+  Future<AuthUser> updateProfile({String? name, bool? showFullName}) async {
+    final u = await api.updateMe(
+      action: 'profile',
+      name: name,
+      showFullName: showFullName,
+    );
+    user = u;
+    notifyListeners();
+    return u;
+  }
+
+  Future<void> updatePassword({
+    required String current,
+    required String newPassword,
+    required String newPassword2,
+  }) async {
+    user = await api.updateMe(
+      action: 'password',
+      currentPassword: current,
+      newPassword: newPassword,
+      newPassword2: newPassword2,
+    );
+    notifyListeners();
+  }
+
+  Future<AuthUser> uploadAvatar(List<int> bytes, String filename) async {
+    final u = await api.uploadAvatar(bytes, filename);
+    user = u;
+    notifyListeners();
+    return u;
   }
 
   Future<void> logout() async {

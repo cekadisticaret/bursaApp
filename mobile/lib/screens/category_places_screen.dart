@@ -53,35 +53,39 @@ class _CategoryPlacesScreenState extends State<CategoryPlacesScreen> {
   Widget build(BuildContext context) {
     return AppPage(
       title: widget.title,
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: _loading && _places.isEmpty
-            ? ListView(children: const [SizedBox(height: 180), Center(child: CircularProgressIndicator())])
-            : _error != null
-                ? ListView(
-                    children: [
-                      const SizedBox(height: 80),
-                      Center(child: Text(_error!, textAlign: TextAlign.center)),
-                      const SizedBox(height: 12),
-                      Center(child: TextButton(onPressed: _load, child: const Text('Tekrar dene'))),
-                    ],
-                  )
-                : _places.isEmpty
-                    ? ListView(
-                        children: const [
-                          SizedBox(height: 80),
-                          Center(child: Text('Bu kategoride kayıt yok.', style: TextStyle(color: AppColors.muted))),
-                        ],
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                        itemCount: _places.length,
-                        itemBuilder: (context, i) => Padding(
-                          padding: const EdgeInsets.only(bottom: 14),
-                          child: DestinationCard(place: _places[i]),
-                        ),
+      onRefresh: _load,
+      body: _loading && _places.isEmpty
+          ? ListView(
+              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+              children: const [SizedBox(height: 180), Center(child: CircularProgressIndicator())],
+            )
+          : _error != null
+              ? ListView(
+                  physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                  children: [
+                    const SizedBox(height: 80),
+                    Center(child: Text(_error!, textAlign: TextAlign.center)),
+                    const SizedBox(height: 12),
+                    Center(child: TextButton(onPressed: _load, child: const Text('Tekrar dene'))),
+                  ],
+                )
+              : _places.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                      children: const [
+                        SizedBox(height: 80),
+                        Center(child: Text('Bu kategoride kayıt yok.', style: TextStyle(color: AppColors.muted))),
+                      ],
+                    )
+                  : ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                      itemCount: _places.length,
+                      itemBuilder: (context, i) => Padding(
+                        padding: const EdgeInsets.only(bottom: 14),
+                        child: DestinationCard(place: _places[i]),
                       ),
-      ),
+                    ),
     );
   }
 }

@@ -6,6 +6,7 @@ import '../core/api/models.dart';
 import '../core/auth/auth_store.dart';
 import '../core/config.dart';
 import '../core/theme/app_theme.dart';
+import '../widgets/app_refresh.dart';
 import '../widgets/destination_card.dart';
 
 class VisitScreen extends StatefulWidget {
@@ -57,7 +58,8 @@ class _VisitScreenState extends State<VisitScreen> {
   Widget build(BuildContext context) {
     final featured = _places.isNotEmpty ? _places.first : null;
 
-    return ListView(
+    return appRefreshList(
+      onRefresh: _load,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
       children: [
         const Text('Gezilecek yerler', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),

@@ -22,6 +22,8 @@ class AuthUser {
     required this.avatarUrl,
     required this.points,
     this.email = '',
+    this.showFullName = false,
+    this.emailVerified = false,
   });
 
   final int id;
@@ -30,6 +32,8 @@ class AuthUser {
   final String avatarUrl;
   final int points;
   final String email;
+  final bool showFullName;
+  final bool emailVerified;
 
   factory AuthUser.fromJson(Map<String, dynamic> j) => AuthUser(
         id: _asInt(j['id']),
@@ -38,6 +42,8 @@ class AuthUser {
         avatarUrl: j['avatar_url']?.toString() ?? '',
         points: _asInt(j['loyalty_points']),
         email: j['email']?.toString() ?? '',
+        showFullName: j['show_full_name'] == true,
+        emailVerified: j['email_verified'] == true,
       );
 }
 

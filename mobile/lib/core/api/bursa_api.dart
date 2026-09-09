@@ -118,6 +118,40 @@ class BursaApi {
     return AuthUser.fromJson(data['user'] as Map<String, dynamic>);
   }
 
+  Future<AuthUser> updateMe({
+    required String action,
+    String? name,
+    bool? showFullName,
+    String? currentPassword,
+    String? newPassword,
+    String? newPassword2,
+  }) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/me');
+    final body = <String, dynamic>{'action': action};
+    if (name != null) body['name'] = name;
+    if (showFullName != null) body['show_full_name'] = showFullName;
+    if (currentPassword != null) body['current_password'] = currentPassword;
+    if (newPassword != null) body['new_password'] = newPassword;
+    if (newPassword2 != null) body['new_password2'] = newPassword2;
+    final res = await _client.patch(uri, headers: _headers, body: jsonEncode(body));
+    final data = await _decode(res);
+    return AuthUser.fromJson(data['user'] as Map<String, dynamic>);
+  }
+
+  Future<AuthUser> uploadAvatar(List<int> bytes, String filename) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/me/avatar');
+    final req = http.MultipartRequest('POST', uri);
+    req.headers['Accept'] = 'application/json';
+    if (token != null && token!.isNotEmpty) {
+      req.headers['Authorization'] = 'Bearer $token';
+    }
+    req.files.add(http.MultipartFile.fromBytes('avatar', bytes, filename: filename));
+    final streamed = await _client.send(req);
+    final res = await http.Response.fromStream(streamed);
+    final data = await _decode(res);
+    return AuthUser.fromJson(data['user'] as Map<String, dynamic>);
+  }
+
   Future<LikeResult> toggleLike(int postId) async {
     final uri = Uri.parse('${AppConfig.apiBase}/posts/$postId/like');
     final res = await _client.post(uri, headers: _headers);

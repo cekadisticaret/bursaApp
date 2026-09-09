@@ -57,7 +57,12 @@ class _MainShellState extends State<MainShell> {
                   onProfileTap: () => setState(() => _tab = 4),
                 ),
               ),
-              Expanded(child: _pages[_tab]),
+              Expanded(
+                child: IndexedStack(
+                  index: _tab,
+                  children: _pages,
+                ),
+              ),
             ],
           ),
         ),

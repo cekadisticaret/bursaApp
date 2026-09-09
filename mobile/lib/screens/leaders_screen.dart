@@ -25,6 +25,7 @@ class _LeadersScreenState extends State<LeadersScreen> {
   }
 
   Future<void> _load() async {
+    setState(() => _loading = true);
     try {
       final auth = context.read<AuthStore>();
       final rows = await auth.api.weeklyLeaders();
@@ -50,11 +51,18 @@ class _LeadersScreenState extends State<LeadersScreen> {
         foregroundColor: Colors.white,
         title: const Text('Lider haritası', style: TextStyle(fontWeight: FontWeight.w900)),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.lime))
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
+      body: RefreshIndicator(
+        onRefresh: _load,
+        color: AppColors.lime,
+        child: _loading
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                children: const [SizedBox(height: 120), Center(child: CircularProgressIndicator(color: AppColors.lime))],
+              )
+            : ListView(
+                physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                padding: const EdgeInsets.all(16),
+                children: [
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
@@ -120,6 +128,7 @@ class _LeadersScreenState extends State<LeadersScreen> {
                 }),
               ],
             ),
+      ),
     );
   }
 }

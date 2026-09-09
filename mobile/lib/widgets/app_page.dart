@@ -3,11 +3,18 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 
 class AppPage extends StatelessWidget {
-  const AppPage({super.key, required this.title, required this.body, this.actions});
+  const AppPage({
+    super.key,
+    required this.title,
+    required this.body,
+    this.actions,
+    this.onRefresh,
+  });
 
   final String title;
   final Widget body;
   final List<Widget>? actions;
+  final Future<void> Function()? onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +25,9 @@ class AppPage extends StatelessWidget {
         centerTitle: true,
         actions: actions,
       ),
-      body: body,
+      body: onRefresh == null
+          ? body
+          : RefreshIndicator(onRefresh: onRefresh!, child: body),
     );
   }
 }

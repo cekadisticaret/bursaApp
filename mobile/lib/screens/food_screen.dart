@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../core/api/models.dart';
 import '../core/auth/auth_store.dart';
+import '../widgets/app_refresh.dart';
 import '../widgets/category_pills.dart';
 import '../widgets/destination_card.dart';
 
@@ -53,7 +54,8 @@ class _FoodScreenState extends State<FoodScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
+    return appRefreshList(
+      onRefresh: _load,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
       children: [
         const Text('Yeme & içme', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),

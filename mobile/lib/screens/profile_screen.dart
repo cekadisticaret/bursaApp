@@ -7,10 +7,12 @@ import '../core/config.dart';
 import '../core/theme/app_theme.dart';
 import '../navigation/app_menu.dart';
 import '../navigation/app_routes.dart';
+import '../widgets/app_refresh.dart';
 import '../widgets/login_sheet.dart';
 import 'create_event_screen.dart';
 import 'leaders_screen.dart';
 import 'activity_buddy_screen.dart';
+import 'profile_settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -26,7 +28,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
+    context.read<AuthStore>().addListener(_onAuthChanged);
     _loadMenu();
+  }
+
+  @override
+  void dispose() {
+    context.read<AuthStore>().removeListener(_onAuthChanged);
+    super.dispose();
+  }
+
+  void _onAuthChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _refresh() async {
+    await context.read<AuthStore>().refreshUser();
+    await _loadMenu();
   }
 
   Future<void> _loadMenu() async {
@@ -39,43 +57,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  void _openLogin() {
+    showLoginSheet(context, onSuccess: _refresh);
+  }
+
+  void _openSettings() {
+    Navigator.of(context).push(appRoute(const ProfileSettingsScreen()));
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthStore>();
     final user = auth.user;
+    final loggedIn = auth.isLoggedIn;
 
-    return ListView(
+    return appRefreshList(
+      onRefresh: _refresh,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
       children: [
         Column(
           children: [
-            CircleAvatar(
-              radius: 48,
-              backgroundColor: AppColors.accentDeep,
-              backgroundImage: user?.avatarUrl != null && user!.avatarUrl.isNotEmpty
-                  ? NetworkImage(user.avatarUrl.startsWith('http') ? user.avatarUrl : '${AppConfig.siteBase}${user.avatarUrl}')
-                  : null,
-              child: user?.avatarUrl.isEmpty != false
-                  ? Text(
-                      (user?.name ?? 'B').substring(0, 1),
-                      style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
-                    )
-                  : null,
+            GestureDetector(
+              onTap: loggedIn ? _openSettings : _openLogin,
+              child: CircleAvatar(
+                radius: 48,
+                backgroundColor: AppColors.accentDeep,
+                backgroundImage: user?.avatarUrl != null && user!.avatarUrl.isNotEmpty
+                    ? NetworkImage(user.avatarUrl.startsWith('http') ? user.avatarUrl : '${AppConfig.siteBase}${user.avatarUrl}')
+                    : null,
+                child: user?.avatarUrl.isEmpty != false
+                    ? Text(
+                        (user?.name ?? 'B').substring(0, 1),
+                        style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+                      )
+                    : null,
+              ),
             ),
             const SizedBox(height: 12),
             Text(user?.name ?? 'Misafir', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
             Text(
-              auth.isLoggedIn ? '${user?.points ?? 0} puan · Bursa rehberi' : 'Giriş yap, puan kazan',
+              loggedIn ? '${user?.points ?? 0} puan · Bursa rehberi' : 'Giriş yap, puan kazan',
               style: const TextStyle(color: AppColors.muted),
             ),
             const SizedBox(height: 12),
-            if (auth.isLoggedIn)
-              OutlinedButton(onPressed: () => auth.logout(), child: const Text('Çıkış'))
-            else
+            if (loggedIn) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  OutlinedButton(onPressed: _openSettings, child: const Text('Profili düzenle')),
+                  const SizedBox(width: 10),
+                  OutlinedButton(onPressed: () => auth.logout(), child: const Text('Çıkış')),
+                ],
+              ),
+            ] else
               FilledButton(
-                onPressed: () => showLoginSheet(context),
+                onPressed: auth.loading ? null : _openLogin,
                 style: FilledButton.styleFrom(backgroundColor: AppColors.nav, foregroundColor: AppColors.lime),
-                child: const Text('Giriş / Kayıt'),
+                child: Text(auth.loading ? 'Giriş yapılıyor…' : 'Giriş / Kayıt'),
               ),
           ],
         ),
