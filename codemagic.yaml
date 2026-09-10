@@ -31,8 +31,12 @@ workflows:
           /usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryUsageDescription 'Profil fotoğrafı seçmek için galeri erişimi gerekir.'" ios/Runner/Info.plist
           /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" ios/Runner/Info.plist 2>/dev/null || \
           /usr/libexec/PlistBuddy -c "Set :ITSAppUsesNonExemptEncryption false" ios/Runner/Info.plist
+          /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string BursaApp" ios/Runner/Info.plist 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName BursaApp" ios/Runner/Info.plist
       - name: Dependencies
-        script: flutter pub get
+        script: |
+          flutter pub get
+          dart run flutter_launcher_icons
       - name: Resolve iOS build number
         script: |
           set -e
@@ -47,18 +51,28 @@ workflows:
           sed -i '' "s/MARKETING_VERSION = [^;]*;/MARKETING_VERSION = ${IOS_version_name};/g" ios/Runner.xcodeproj/project.pbxproj
       - name: Set up code signing
         script: |
+          set -e
           keychain initialize
           keychain add-certificates
           xcode-project use-profiles
           if [ ! -f "$HOME/export_options.plist" ]; then
-            echo "export_options.plist oluşmadı"
+            echo "HATA: export_options.plist yok."
+            echo "Codemagic → Team → iOS certificates: bursaapp_dist"
+            echo "Codemagic → iOS provisioning: bursaapp_appstore"
+            echo "Workflow bu repodaki kök codemagic.yaml olmalı (UI script değil)."
             exit 1
           fi
+          echo "✓ export_options.plist hazır"
+          security find-identity -v -p codesigning | head -5 || true
       - name: Analyze
         script: flutter analyze --no-fatal-infos --no-fatal-warnings
       - name: Build IPA
         script: |
           set -e
+          if [ ! -f "$HOME/export_options.plist" ]; then
+            echo "HATA: İmza adımı atlanmış — Build IPA önce 'Set up code signing' çalışmalı."
+            exit 1
+          fi
           VERSION_NAME=$(cat .ios_version_name)
           BUILD_NUMBER=$(cat .ios_build_number)
           echo "flutter build ipa --build-name=$VERSION_NAME --build-number=$BUILD_NUMBER"
