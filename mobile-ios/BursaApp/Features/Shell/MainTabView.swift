@@ -126,7 +126,7 @@ private struct ProfileTabStack: View {
         NavigationStack(path: $path) {
             ProfileView(tabSelection: $tabSelection, navPath: $path)
                 .navigationDestination(for: MenuDestination.self) { MenuDestinationView(link: $0.link) }
-                .navigationDestination(for: String.self) { PlaceDetailView(slug: slug) }
+                .navigationDestination(for: String.self) { PlaceDetailView(slug: $0) }
                 .navigationDestination(for: AppNavRoute.self) { route in
                     switch route {
                     case .settings: ProfileSettingsView()

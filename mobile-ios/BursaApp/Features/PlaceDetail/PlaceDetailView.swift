@@ -25,7 +25,7 @@ struct PlaceDetailView: View {
             bottomBar
         }
         .background(AppColors.bg.ignoresSafeArea())
-        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarHidden(true)
         .task { await load() }
         .refreshable { await load() }
         .sheet(isPresented: $showAuth) { AuthFlowView() }

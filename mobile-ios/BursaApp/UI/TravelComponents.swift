@@ -71,11 +71,11 @@ struct TravelHeroTitle: View {
         VStack(alignment: .leading, spacing: 2) {
             (
                 Text("Nereye 🏝️\n")
-                    .foregroundStyle(AppColors.ink)
+                    .foregroundColor(AppColors.ink)
                 + Text("\(highlight) ")
-                    .foregroundStyle(AppColors.nav)
+                    .foregroundColor(AppColors.nav)
                 + Text("gitmek\nistiyorsun?")
-                    .foregroundStyle(AppColors.ink)
+                    .foregroundColor(AppColors.ink)
             )
             .font(.system(size: 30, weight: .bold))
             .lineSpacing(2)
@@ -375,7 +375,8 @@ struct TravelBottomActionBar: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 14)
-        .background(.white.shadow(color: .black.opacity(0.08), radius: 12, y: -4))
+        .background(Color.white)
+        .shadow(color: .black.opacity(0.08), radius: 12, y: -4)
     }
 }
 

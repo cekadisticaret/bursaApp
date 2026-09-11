@@ -104,10 +104,10 @@ private struct AuthHeroCopy: View {
             (
                 Text(title)
                     .font(.system(size: 26, weight: .black))
-                    .foregroundStyle(AuthPalette.forest)
+                    .foregroundColor(AuthPalette.forest)
                 + Text(highlight)
                     .font(.system(size: 26, weight: .black))
-                    .foregroundStyle(AuthPalette.forest)
+                    .foregroundColor(AuthPalette.forest)
                 + Text(" 🏔")
                     .font(.system(size: 24))
             )
@@ -164,10 +164,10 @@ private struct AuthFooterLink: View {
         Button(action: action) {
             (
                 Text(prefix + " ")
-                    .foregroundStyle(AuthPalette.mutedText.opacity(0.9))
+                    .foregroundColor(AuthPalette.mutedText.opacity(0.9))
                 + Text(actionText)
                     .fontWeight(.black)
-                    .foregroundStyle(AuthPalette.forest)
+                    .foregroundColor(AuthPalette.forest)
             )
             .font(.system(size: 14, weight: .medium))
             .frame(maxWidth: .infinity)
