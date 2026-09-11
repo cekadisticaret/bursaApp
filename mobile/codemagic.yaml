@@ -1,3 +1,0 @@
-# Bu dosya kullanılmıyor — Codemagic yalnızca repoda kök /codemagic.yaml okur.
-# Codemagic UI'da "Configuration as code" → codemagic.yaml (repo root) seçili olsun.
-# Workflow Editor'de elle yazılmış script varsa kapat; aksi halde imza/build numarası adımları atlanır.
