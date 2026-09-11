@@ -10,8 +10,10 @@ import '../navigation/app_routes.dart';
 import '../navigation/feed_nav.dart';
 import '../navigation/place_nav.dart';
 import '../widgets/category_pills.dart';
+import '../widgets/feed_filter_sheet.dart';
 import '../widgets/login_sheet.dart';
 import 'category_places_screen.dart';
+import 'place_search_screen.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -111,7 +113,12 @@ class _FeedScreenState extends State<FeedScreen> {
         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
         children: [
-          _SearchBar(),
+          _SearchBar(
+            onSearchTap: () {
+              Navigator.of(context).push(appRoute(const PlaceSearchScreen()));
+            },
+            onFilterTap: () => FeedFilterSheet.show(context),
+          ),
           const SizedBox(height: 14),
           CategoryPills(
             items: _chips,
@@ -158,6 +165,11 @@ class _FeedScreenState extends State<FeedScreen> {
 }
 
 class _SearchBar extends StatelessWidget {
+  const _SearchBar({required this.onSearchTap, required this.onFilterTap});
+
+  final VoidCallback onSearchTap;
+  final VoidCallback onFilterTap;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -169,22 +181,42 @@ class _SearchBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.search_rounded, color: AppColors.muted),
-          const SizedBox(width: 10),
-          const Expanded(
-            child: Text(
-              'Mekan, etkinlik, mahalle…',
-              style: TextStyle(color: AppColors.muted, fontWeight: FontWeight.w600),
+          Expanded(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onSearchTap,
+                borderRadius: BorderRadius.circular(AppRadii.md),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    children: const [
+                      Icon(Icons.search_rounded, color: AppColors.muted),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Mekan, etkinlik, mahalle…',
+                          style: TextStyle(color: AppColors.muted, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.nav,
+          Material(
+            color: AppColors.nav,
+            borderRadius: BorderRadius.circular(14),
+            child: InkWell(
+              onTap: onFilterTap,
               borderRadius: BorderRadius.circular(14),
+              child: const SizedBox(
+                width: 40,
+                height: 40,
+                child: Icon(Icons.tune_rounded, color: AppColors.lime, size: 20),
+              ),
             ),
-            child: const Icon(Icons.tune_rounded, color: AppColors.lime, size: 20),
           ),
         ],
       ),
