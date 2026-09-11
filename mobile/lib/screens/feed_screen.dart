@@ -6,8 +6,12 @@ import '../core/api/models.dart';
 import '../core/auth/auth_store.dart';
 import '../core/config.dart';
 import '../core/theme/app_theme.dart';
+import '../navigation/app_routes.dart';
+import '../navigation/feed_nav.dart';
+import '../navigation/place_nav.dart';
 import '../widgets/category_pills.dart';
 import '../widgets/login_sheet.dart';
+import 'category_places_screen.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -51,7 +55,6 @@ class _FeedScreenState extends State<FeedScreen> {
       var eventIdx = 0;
       for (var i = 0; i < res.feed.length; i++) {
         final post = res.feed[i];
-        if (_chip != 'all' && post.kind != 'post') continue;
         _items.add(post);
         if ((i + 1) % 2 == 0 && eventIdx < _events.length) {
           _items.add(_events[eventIdx++]);
@@ -83,6 +86,21 @@ class _FeedScreenState extends State<FeedScreen> {
     });
   }
 
+  void _onChipSelected(String v) {
+    if (v == 'all') {
+      setState(() => _chip = v);
+      _load(refresh: true);
+      return;
+    }
+    openFeedChip(context, v);
+  }
+
+  void _openEvents() {
+    Navigator.of(context).push(
+      appRoute(const CategoryPlacesScreen(title: 'Etkinlikler', category: 'event')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final hero = _events.isNotEmpty ? _events.first : null;
@@ -98,25 +116,36 @@ class _FeedScreenState extends State<FeedScreen> {
           CategoryPills(
             items: _chips,
             selected: _chip,
-            onSelected: (v) {
-              setState(() => _chip = v);
-              _load(refresh: true);
-            },
+            onSelected: _onChipSelected,
           ),
           const SizedBox(height: 16),
           if (hero != null) ...[
-            _HeroEventCard(event: hero),
+            _HeroEventCard(event: hero, onTap: () => openPlaceDetail(context, hero.slug)),
             const SizedBox(height: 18),
-            const _SectionTitle(title: 'Topluluk akışı'),
+            _SectionTitle(title: 'Topluluk akışı', onSeeAll: _openEvents),
             const SizedBox(height: 10),
           ],
           if (_loading && _items.isEmpty)
             const Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator()))
           else
             ..._items.map((item) {
-              if (item is EventItem) return _EventStrip(event: item);
+              if (item is EventItem) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: _EventStrip(
+                    event: item,
+                    onTap: () => openPlaceDetail(context, item.slug),
+                  ),
+                );
+              }
               if (item is FeedItem) {
-                return _FeedCard(item: item, onLike: () => _like(item));
+                return _FeedCard(
+                  item: item,
+                  onLike: () => _like(item),
+                  onPlaceTap: item.placeSlug != null && item.placeSlug!.isNotEmpty
+                      ? () => openPlaceDetail(context, item.placeSlug!)
+                      : null,
+                );
               }
               return const SizedBox.shrink();
             }),
@@ -164,8 +193,9 @@ class _SearchBar extends StatelessWidget {
 }
 
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title});
+  const _SectionTitle({required this.title, this.onSeeAll});
   final String title;
+  final VoidCallback? onSeeAll;
 
   @override
   Widget build(BuildContext context) {
@@ -173,89 +203,112 @@ class _SectionTitle extends StatelessWidget {
       children: [
         Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
         const Spacer(),
-        Text('Tümü', style: TextStyle(color: AppColors.accentDeep, fontWeight: FontWeight.w800, fontSize: 13)),
+        GestureDetector(
+          onTap: onSeeAll,
+          child: Text(
+            'Tümü',
+            style: TextStyle(
+              color: AppColors.accentDeep,
+              fontWeight: FontWeight.w800,
+              fontSize: 13,
+            ),
+          ),
+        ),
       ],
     );
   }
 }
 
 class _HeroEventCard extends StatelessWidget {
-  const _HeroEventCard({required this.event});
+  const _HeroEventCard({required this.event, required this.onTap});
   final EventItem event;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final img = event.imgUrl;
-    return Container(
-      height: 220,
-      decoration: BoxDecoration(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadii.xl),
-        boxShadow: AppShadows.soft,
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (img.isNotEmpty)
-            CachedNetworkImage(
-              imageUrl: img.startsWith('http') ? img : '${AppConfig.siteBase}$img',
-              fit: BoxFit.cover,
-            )
-          else
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(colors: [AppColors.bgDeep, AppColors.accentDeep]),
-              ),
-            ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.transparent, AppColors.ink.withValues(alpha: 0.75)],
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadii.xl),
+            boxShadow: AppShadows.soft,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadii.xl),
+            child: SizedBox(
+              height: 220,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (img.isNotEmpty)
+                    CachedNetworkImage(
+                      imageUrl: img.startsWith('http') ? img : '${AppConfig.siteBase}$img',
+                      fit: BoxFit.cover,
+                    )
+                  else
+                    Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(colors: [AppColors.bgDeep, AppColors.accentDeep]),
+                      ),
+                    ),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.transparent, AppColors.ink.withValues(alpha: 0.75)],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 18,
+                    right: 18,
+                    bottom: 18,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: AppColors.lime,
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: Text(
+                            event.whenLabel.isNotEmpty ? event.whenLabel : 'Yakında',
+                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 11, color: AppColors.ink),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          event.title,
+                          style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, height: 1.1),
+                        ),
+                        Text(
+                          '${event.startsAtLabel}${event.ilce.isNotEmpty ? ' · ${event.ilce}' : ''}',
+                          style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          Positioned(
-            left: 18,
-            right: 18,
-            bottom: 18,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: AppColors.lime,
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                  child: Text(
-                    event.whenLabel.isNotEmpty ? event.whenLabel : 'Yakında',
-                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 11, color: AppColors.ink),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  event.title,
-                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, height: 1.1),
-                ),
-                Text(
-                  '${event.startsAtLabel}${event.ilce.isNotEmpty ? ' · ${event.ilce}' : ''}',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
 class _FeedCard extends StatelessWidget {
-  const _FeedCard({required this.item, required this.onLike});
+  const _FeedCard({required this.item, required this.onLike, this.onPlaceTap});
   final FeedItem item;
   final VoidCallback onLike;
+  final VoidCallback? onPlaceTap;
 
   @override
   Widget build(BuildContext context) {
@@ -330,7 +383,13 @@ class _FeedCard extends StatelessWidget {
                 _PillAction(icon: Icons.chat_bubble_outline, label: '${item.comments}', onTap: () => requireAuth(context, () {})),
                 const Spacer(),
                 if (item.placeTitle != null)
-                  Text(item.placeTitle!, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.accentDeep)),
+                  GestureDetector(
+                    onTap: onPlaceTap,
+                    child: Text(
+                      item.placeTitle!,
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.accentDeep),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -367,35 +426,45 @@ class _PillAction extends StatelessWidget {
 }
 
 class _EventStrip extends StatelessWidget {
-  const _EventStrip({required this.event});
+  const _EventStrip({required this.event, required this.onTap});
   final EventItem event;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.pink.withValues(alpha: 0.22), AppColors.sky.withValues(alpha: 0.18)],
-        ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadii.lg),
-        border: Border.all(color: AppColors.pink.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.event_available_rounded, color: AppColors.coral, size: 28),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.pink.withValues(alpha: 0.22), AppColors.sky.withValues(alpha: 0.18)],
+            ),
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(color: AppColors.pink.withValues(alpha: 0.25)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
               children: [
-                Text(event.title, style: const TextStyle(fontWeight: FontWeight.w900)),
-                Text('${event.whenLabel} · ${event.startsAtLabel}', style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+                const Icon(Icons.event_available_rounded, color: AppColors.coral, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(event.title, style: const TextStyle(fontWeight: FontWeight.w900)),
+                      Text('${event.whenLabel} · ${event.startsAtLabel}', style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

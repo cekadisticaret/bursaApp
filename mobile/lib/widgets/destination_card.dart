@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../core/api/models.dart';
 import '../core/config.dart';
 import '../core/theme/app_theme.dart';
+import '../navigation/place_nav.dart';
 
 class DestinationCard extends StatelessWidget {
   const DestinationCard({super.key, required this.place, this.onTap});
@@ -14,7 +15,7 @@ class DestinationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final img = place.imgUrl;
     return GestureDetector(
-      onTap: onTap,
+      onTap: onTap ?? (place.slug.isNotEmpty ? () => openPlaceDetail(context, place.slug) : null),
       child: Container(
         height: 190,
         decoration: BoxDecoration(

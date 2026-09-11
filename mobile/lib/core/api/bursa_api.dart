@@ -70,6 +70,18 @@ class BursaApi {
         .toList();
   }
 
+  Future<Map<String, dynamic>> placeDetail(String slug) async {
+    final safe = Uri.encodeComponent(slug.trim());
+    final uri = Uri.parse('${AppConfig.apiBase}/places/$safe');
+    final res = await _client.get(uri, headers: _headers);
+    final data = await _decode(res);
+    final place = data['place'];
+    if (place is! Map<String, dynamic>) {
+      throw ApiException('Mekan bulunamadı', 404);
+    }
+    return place;
+  }
+
   Future<List<PlaceItem>> nearby({required double lat, required double lng, double r = 1200}) async {
     final uri = Uri.parse('${AppConfig.apiBase}/discover/nearby').replace(
       queryParameters: {'lat': '$lat', 'lng': '$lng', 'r': '${r.toInt()}'},
