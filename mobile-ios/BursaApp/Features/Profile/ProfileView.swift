@@ -4,10 +4,10 @@ struct ProfileView: View {
     @EnvironmentObject private var auth: AuthStore
     @Binding var tabSelection: ShellTab
     @Binding var navPath: NavigationPath
+    @State private var showAuth = false
 
     @State private var menu: [MenuGroup] = []
     @State private var loadingMenu = true
-    @State private var showAuth = false
 
     var body: some View {
         ScrollView {
@@ -32,32 +32,44 @@ struct ProfileView: View {
 
     private var header: some View {
         VStack(spacing: 12) {
-            if auth.isLoggedIn, let user = auth.user {
-                RemoteImage(url: user.avatarUrl, placeholder: "person.crop.circle.fill")
-                    .frame(width: 96, height: 96)
-                    .clipShape(Circle())
-                Text(user.displayName).font(.title2.bold())
-                Text("\(user.points) puan · Bursa rehberi")
-                    .font(.subheadline)
-                    .foregroundStyle(AppColors.muted)
+            Button {
+                if auth.isLoggedIn { navPath.append(AppNavRoute.settings) }
+                else { showAuth = true }
+            } label: {
+                Group {
+                    if auth.isLoggedIn, let user = auth.user, !user.avatarUrl.isEmpty {
+                        RemoteImage(url: user.avatarUrl, placeholder: "person.fill")
+                    } else if auth.isLoggedIn, let user = auth.user {
+                        Text(String(user.name.prefix(1)).uppercased())
+                            .font(.largeTitle.weight(.bold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .background(AppColors.accentDeep)
+                    } else {
+                        Text("👋").font(.largeTitle)
+                    }
+                }
+                .frame(width: 96, height: 96)
+                .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+
+            Text(auth.isLoggedIn ? (auth.user?.displayName ?? "Üye") : "Giriş")
+                .font(.title2.weight(.black))
+            Text(auth.isLoggedIn ? "\(auth.user?.points ?? 0) puan · Bursa rehberi" : "Hesabınla devam et")
+                .font(.subheadline)
+                .foregroundStyle(AppColors.muted)
+
+            if auth.isLoggedIn {
+                Button("Profili düzenle") { navPath.append(AppNavRoute.settings) }
+                    .buttonStyle(.bordered)
                 Button("Çıkış yap", role: .destructive) {
                     Task { await auth.logout(); await refresh() }
                 }
                 .buttonStyle(.bordered)
-                Button("Hesap ayarları") {
-                    navPath.append(AppNavRoute.settings)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(AppColors.nav)
+                .tint(AppColors.coral)
             } else {
-                Image(systemName: "person.crop.circle.badge.plus")
-                    .font(.system(size: 56))
-                    .foregroundStyle(AppColors.accentDeep)
-                Text("Giriş").font(.title2.bold())
-                Text("Hesabınla etkinlik ekle, beğeni ve puan biriktir.")
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(AppColors.muted)
-                Button("Giriş yap / Kayıt ol") { showAuth = true }
+                Button(auth.loading ? "Yükleniyor…" : "Giriş") { showAuth = true }
                     .buttonStyle(.borderedProminent)
                     .tint(AppColors.nav)
             }
@@ -68,31 +80,31 @@ struct ProfileView: View {
 
     private var quickTiles: some View {
         HStack(spacing: 10) {
-            quickTile("Gez", icon: "mountain.2.fill") {
+            quickTile("Gez", icon: "mountain.2.fill", color: AppColors.accentDeep) {
                 navPath.append(MenuDestination(link: MenuLink(label: "Gezilecek", path: "/gezilecek", category: nil)))
             }
-            quickTile("Liderler", icon: "trophy.fill") {
+            quickTile("Etkinlik", icon: "plus.circle.fill", color: AppColors.pink) {
+                if auth.isLoggedIn { navPath.append(AppNavRoute.createEvent) }
+                else { showAuth = true }
+            }
+            quickTile("Liderler", icon: "trophy.fill", color: AppColors.sky) {
                 navPath.append(MenuDestination(link: MenuLink(label: "Liderler", path: "/liderler", category: nil)))
             }
-            quickTile("Partner", icon: "person.3.fill") {
+            quickTile("Partner", icon: "person.3.fill", color: AppColors.amber) {
                 navPath.append(MenuDestination(link: MenuLink(label: "Partner", path: "/arkadas-ara", category: nil)))
-            }
-            quickTile("Eczane", icon: "cross.case.fill") {
-                navPath.append(MenuDestination(link: MenuLink(label: "Nöbetçi", path: "/nobetci-eczaneler", category: nil)))
             }
         }
     }
 
-    private func quickTile(_ label: String, icon: String, action: @escaping () -> Void) -> some View {
+    private func quickTile(_ label: String, icon: String, color: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             VStack(spacing: 6) {
-                Image(systemName: icon).font(.title3)
-                Text(label).font(.caption.weight(.bold))
+                Image(systemName: icon).font(.title3).foregroundStyle(color)
+                Text(label).font(.caption.weight(.heavy)).foregroundStyle(AppColors.ink)
             }
-            .foregroundStyle(AppColors.accentDeep)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background(RoundedRectangle(cornerRadius: AppRadii.md).fill(AppColors.accentDeep.opacity(0.15)))
+            .padding(.vertical, 18)
+            .background(RoundedRectangle(cornerRadius: AppRadii.md).fill(color.opacity(0.18)))
         }
         .buttonStyle(.plain)
     }
@@ -109,12 +121,9 @@ struct ProfileView: View {
                     AppMenuPath.open(item, tabSelection: $tabSelection, navigationPath: $navPath)
                 } label: {
                     HStack {
-                        Text(item.label)
-                            .foregroundStyle(AppColors.ink)
+                        Text(item.label).foregroundStyle(AppColors.ink)
                         Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundStyle(AppColors.muted)
+                        Image(systemName: "chevron.right").font(.caption).foregroundStyle(AppColors.muted)
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 14)
@@ -132,9 +141,7 @@ struct ProfileView: View {
     private func refresh() async {
         loadingMenu = true
         defer { loadingMenu = false }
-        if auth.isLoggedIn {
-            await auth.refreshUser()
-        }
+        if auth.isLoggedIn { await auth.refreshUser() }
         if let groups = try? await auth.apiClient().mobileMenu() {
             menu = groups
         }

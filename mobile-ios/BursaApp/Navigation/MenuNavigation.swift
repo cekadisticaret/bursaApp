@@ -55,16 +55,18 @@ struct MenuDestinationView: View {
             UtilitiesView()
         case "/hafta-sonu":
             WeekendView()
+        case "/kamp":
+            CategoryPlacesView(title: "Kamp alanları", category: "camp")
         case "/oteller":
-            MobilePlacesView(endpoint: .hotels, title: "Oteller")
+            HotelsView()
         case "/veterinerler":
-            MobilePlacesView(endpoint: .vets, title: "Veterinerler")
+            VetsView()
         case "/dis-hekimleri":
-            MobilePlacesView(endpoint: .dentists, title: "Diş hekimleri")
+            DentistsView()
         case "/doktorlar":
-            MobilePlacesView(endpoint: .doctors, title: "Doktorlar")
+            DoctorsView()
         case "/hastaneler":
-            MobilePlacesView(endpoint: .hospitals, title: "Hastaneler")
+            HospitalsView()
         case "/rota":
             RoutePlannerView()
         case "/arkadas-ara":

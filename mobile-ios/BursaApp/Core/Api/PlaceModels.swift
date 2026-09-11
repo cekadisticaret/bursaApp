@@ -15,6 +15,7 @@ struct PlaceItem: Identifiable, Sendable, Hashable {
     let venueName: String
     let categoryLabel: String
     let path: String
+    var isFav: Bool
 
     var detailSlug: String {
         let s = slug.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -49,7 +50,8 @@ struct PlaceItem: Identifiable, Sendable, Hashable {
             whenLabel: json["when"] as? String ?? json["when_long"] as? String ?? "",
             venueName: json["venue_name"] as? String ?? "",
             categoryLabel: json["category_label"] as? String ?? "",
-            path: path
+            path: path,
+            isFav: json["is_fav"] as? Bool ?? false
         )
     }
 
@@ -187,4 +189,5 @@ enum AppNavRoute: Hashable {
     case search(String)
     case okey
     case category(String, String)
+    case hotels
 }

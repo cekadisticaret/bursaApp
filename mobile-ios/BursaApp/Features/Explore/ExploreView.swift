@@ -50,52 +50,64 @@ struct ExploreView: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            VStack(spacing: 0) {
-                Map(position: $camera) {
-                    if routePoints.count >= 2 {
-                        MapPolyline(coordinates: routePoints)
-                            .stroke(AppColors.accentDeep, lineWidth: 4)
-                    }
-                    ForEach(filtered) { place in
-                        if let lat = place.lat, let lng = place.lng {
-                            Annotation(place.title, coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng)) {
-                                Button {
-                                    selectedPlace = place
-                                    Task { await drawRoute(to: place) }
-                                } label: {
-                                    Image(systemName: selectedPlace?.id == place.id ? "mappin.and.ellipse" : "mappin.circle.fill")
-                                        .font(.title2)
-                                        .foregroundStyle(AppColors.coral)
+            AppPage(title: "Harita") {
+                VStack(spacing: 0) {
+                    Map(position: $camera) {
+                        if routePoints.count >= 2 {
+                            MapPolyline(coordinates: routePoints)
+                                .stroke(AppColors.accentDeep, lineWidth: 4)
+                        }
+                        ForEach(filtered) { place in
+                            if let lat = place.lat, let lng = place.lng {
+                                Annotation(place.title, coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng)) {
+                                    Button {
+                                        selectedPlace = place
+                                        Task { await drawRoute(to: place) }
+                                    } label: {
+                                        Image(systemName: selectedPlace?.id == place.id ? "mappin.and.ellipse" : "mappin.circle.fill")
+                                            .font(.title2)
+                                            .foregroundStyle(AppColors.coral)
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                .frame(height: 280)
-                .clipShape(RoundedRectangle(cornerRadius: AppRadii.md))
+                    .frame(height: 300)
+                    .clipShape(RoundedRectangle(cornerRadius: AppRadii.md))
 
-                if let routeInfo, !routeInfo.isEmpty {
-                    Text("Rota · \(routeInfo)")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(AppColors.accentDeep)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 8)
-                }
+                    HStack {
+                        if let routeInfo, !routeInfo.isEmpty {
+                            Text("Rota · \(routeInfo)")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(AppColors.accentDeep)
+                        }
+                        Spacer()
+                        Button("Konumum") { location.request() }
+                            .font(.caption.weight(.heavy))
+                            .foregroundStyle(AppColors.accentDeep)
+                    }
+                    .padding(.top, 10)
 
-                FilterChips(items: filters, selected: filter) { filter = $0 }
-                    .padding(.vertical, 10)
+                    FilterChips(items: filters, selected: filter) { filter = $0 }
+                        .padding(.vertical, 10)
 
-                if loading {
-                    ProgressView().padding()
-                } else {
-                    ScrollView {
-                        PlaceListSection(places: filtered)
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 16)
+                    if loading {
+                        ProgressView().padding()
+                    } else if filtered.isEmpty {
+                        Text("Yakında mekan yok").foregroundStyle(AppColors.muted).padding()
+                    } else {
+                        ScrollView {
+                            PlaceListSection(places: filtered)
+                                .padding(.bottom, 16)
+                        }
                     }
                 }
+                .padding(.horizontal, 16)
+                .refreshable {
+                    location.request()
+                    await load()
+                }
             }
-            .padding(.horizontal, 16)
             .task {
                 location.request()
                 await load()

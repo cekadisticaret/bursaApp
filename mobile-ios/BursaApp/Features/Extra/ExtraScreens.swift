@@ -251,30 +251,55 @@ struct RoutePlannerView: View {
 
     @ViewBuilder
     private func routeResult(_ data: [String: Any]) -> some View {
+        let title = data["title"] as? String ?? "Günün planı"
+        let estTotal = data["est_total_tl"]
+        let budget = data["budget_tl"]
+        let within = data["within_budget"] as? Bool == true
+        let slots = data["slots"] as? [[String: Any]] ?? data["stops"] as? [[String: Any]] ?? data["places"] as? [[String: Any]] ?? []
+        let tips = (data["tips"] as? [Any] ?? []).map { "\($0)" }.filter { !$0.isEmpty }
+
         VStack(alignment: .leading, spacing: 12) {
-            if let title = data["title"] as? String {
-                Text(title).font(.headline)
-            }
-            if let summary = data["summary"] as? String {
-                Text(summary).font(.subheadline).foregroundStyle(AppColors.muted)
-            }
-            let stops = data["stops"] as? [[String: Any]] ?? data["places"] as? [[String: Any]] ?? []
-            ForEach(Array(stops.enumerated()), id: \.offset) { idx, stop in
-                HStack(alignment: .top, spacing: 10) {
-                    Text("\(idx + 1)").font(.caption.bold()).foregroundStyle(AppColors.lime)
-                        .frame(width: 24, height: 24)
-                        .background(Circle().fill(AppColors.nav))
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(stop["title"] as? String ?? stop["name"] as? String ?? "Durak")
-                            .font(.subheadline.bold())
-                        if let blurb = stop["blurb"] as? String, !blurb.isEmpty {
-                            Text(blurb).font(.caption).foregroundStyle(AppColors.muted)
-                        }
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Günün planı")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(AppColors.muted)
+                Text(title)
+                    .font(.title3.weight(.black))
+                HStack(spacing: 8) {
+                    if estTotal != nil {
+                        MetaChip(text: "~\(JSONValue.int(estTotal)) TL", color: AppColors.ink)
+                    }
+                    if budget != nil {
+                        MetaChip(
+                            text: within ? "Bütçe \(JSONValue.int(budget)) TL ✓" : "Bütçe \(JSONValue.int(budget)) TL aşıldı",
+                            color: within ? AppColors.accentDeep : AppColors.coral
+                        )
+                    }
+                    MetaChip(text: "\(slots.count) durak", color: AppColors.muted)
+                }
+                if !tips.isEmpty {
+                    ForEach(Array(tips.enumerated()), id: \.offset) { _, tip in
+                        Text("• \(tip)")
+                            .font(.caption)
+                            .foregroundStyle(AppColors.muted)
                     }
                 }
-                .padding(12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: AppRadii.sm).fill(AppColors.card))
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: AppRadii.md).fill(AppColors.card).cardShadow())
+
+            ForEach(Array(slots.enumerated()), id: \.offset) { idx, slot in
+                if let transit = slot["transit_from_prev"] as? String, !transit.isEmpty {
+                    HStack(alignment: .top, spacing: 8) {
+                        Text("🚌")
+                        Text(transit)
+                            .font(.caption)
+                            .foregroundStyle(AppColors.muted)
+                    }
+                    .padding(.leading, 18)
+                }
+                RouteStopCard(slot: slot, index: idx + 1)
             }
         }
     }
@@ -291,6 +316,76 @@ struct RoutePlannerView: View {
         } catch {
             self.error = error.localizedDescription
         }
+    }
+}
+
+private struct RouteStopCard: View {
+    let slot: [String: Any]
+    let index: Int
+
+    private var slug: String {
+        (slot["slug"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var body: some View {
+        let content = stopContent
+        if slug.isEmpty {
+            content
+        } else {
+            NavigationLink(value: slug) { content }.buttonStyle(.plain)
+        }
+    }
+
+    private var stopContent: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(slotEmoji)
+                .font(.title3)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 8) {
+                    if let time = slot["slot_time"] as? String, !time.isEmpty {
+                        Text(time).font(.caption.weight(.heavy))
+                    }
+                    if let label = slot["slot_label"] as? String, !label.isEmpty {
+                        Text(label).font(.caption.weight(.semibold)).foregroundStyle(AppColors.muted)
+                    }
+                }
+                Text(slot["title"] as? String ?? slot["name"] as? String ?? "Durak \(index)")
+                    .font(.headline.weight(.heavy))
+                HStack(spacing: 8) {
+                    if let ilce = slot["ilce"] as? String, !ilce.isEmpty {
+                        Text(ilce).font(.caption).foregroundStyle(AppColors.muted)
+                    }
+                    Text(costLabel)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(costIsFree ? AppColors.accentDeep : AppColors.muted)
+                }
+            }
+            Spacer(minLength: 0)
+            if !slug.isEmpty {
+                Image(systemName: "chevron.right").foregroundStyle(AppColors.muted.opacity(0.6))
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: AppRadii.md).fill(AppColors.card).cardShadow())
+    }
+
+    private var slotEmoji: String {
+        let label = (slot["slot_label"] as? String ?? "").lowercased()
+        if label.contains("kahvalt") { return "☕️" }
+        if label.contains("öğle") || label.contains("ogle") { return "🍽️" }
+        if label.contains("akşam") || label.contains("aksam") { return "🌙" }
+        if label.contains("müze") || label.contains("muze") { return "🏛️" }
+        return "📍"
+    }
+
+    private var costLabel: String {
+        let cost = JSONValue.int(slot["slot_cost_tl"], default: -1)
+        return cost <= 0 ? "Ücretsiz" : "~\(cost) TL"
+    }
+
+    private var costIsFree: Bool {
+        JSONValue.int(slot["slot_cost_tl"], default: 0) <= 0
     }
 }
 

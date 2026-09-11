@@ -17,47 +17,109 @@ struct PlaceDetailView: View {
                 if loading && place == nil {
                     ProgressView().padding(.vertical, 40)
                 } else if let error {
-                    Text(error).foregroundStyle(AppColors.coral).padding()
+                    VStack(spacing: 12) {
+                        Text(error).foregroundStyle(AppColors.coral)
+                        Button("Tekrar dene") { Task { await load() } }
+                    }
+                    .padding()
                 } else if let place {
-                    VStack(alignment: .leading, spacing: 12) {
-                        if let img = place["img_url"] as? String, !img.isEmpty {
-                            RemoteImage(url: img, placeholder: "photo")
-                                .frame(height: 200)
-                                .frame(maxWidth: .infinity)
-                                .clipShape(RoundedRectangle(cornerRadius: AppRadii.md))
+                    VStack(alignment: .leading, spacing: 16) {
+                        heroImage(place)
+                        Text(place["title"] as? String ?? "")
+                            .font(.title.weight(.black))
+                            .foregroundStyle(AppColors.ink)
+                        if !metaLine(for: place).isEmpty {
+                            Text(metaLine(for: place))
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(AppColors.muted)
                         }
-                        if let ilce = place["ilce"] as? String, !ilce.isEmpty {
-                            Text(ilce).font(.caption.weight(.semibold)).foregroundStyle(AppColors.accentDeep)
+                        if let address = place["address"] as? String, !address.isEmpty {
+                            HStack(alignment: .top, spacing: 8) {
+                                Image(systemName: "mappin.and.ellipse")
+                                    .foregroundStyle(AppColors.accentDeep)
+                                Text(address)
+                                    .font(.subheadline)
+                                    .foregroundStyle(AppColors.ink)
+                            }
                         }
-                        if let blurb = place["blurb"] as? String, !blurb.isEmpty {
-                            Text(blurb).foregroundStyle(AppColors.ink)
+                        if let maps = mapsURL(for: place) {
+                            Link(destination: maps) {
+                                Label("Haritada aç", systemImage: "map.fill")
+                                    .font(.subheadline.weight(.semibold))
+                            }
                         }
-                        if let body = place["body"] as? String, !body.isEmpty {
-                            Text(body).font(.subheadline).foregroundStyle(AppColors.muted)
-                        }
+                        Text(bodyText(for: place))
+                            .font(.body)
+                            .foregroundStyle(AppColors.ink)
+                            .lineSpacing(4)
                         HStack {
                             Button {
                                 Task { await toggleFavorite() }
                             } label: {
                                 Label("\(favCount)", systemImage: isFav ? "heart.fill" : "heart")
+                                    .font(.headline)
                                     .foregroundStyle(isFav ? AppColors.coral : AppColors.muted)
                             }
                             .disabled(favBusy)
                             Spacer()
-                            if let url = webURL(for: place) {
-                                Link("Web'de aç", destination: url)
-                                    .font(.headline)
-                                    .foregroundStyle(AppColors.accentDeep)
+                        }
+                        if let url = webURL(for: place) {
+                            Link(destination: url) {
+                                Label("Web sayfasında aç", systemImage: "arrow.up.right.square.fill")
+                                    .font(.headline.weight(.heavy))
+                                    .foregroundStyle(AppColors.lime)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 14)
+                                    .background(RoundedRectangle(cornerRadius: AppRadii.md).fill(AppColors.nav))
                             }
                         }
                     }
                     .padding(16)
+                    .padding(.bottom, 24)
                 }
             }
             .refreshable { await load() }
         }
         .task { await load() }
         .sheet(isPresented: $showAuth) { AuthFlowView() }
+    }
+
+    @ViewBuilder
+    private func heroImage(_ place: [String: Any]) -> some View {
+        if let img = place["img_url"] as? String, !img.isEmpty {
+            RemoteImage(url: img, placeholder: "photo")
+                .frame(height: 220)
+                .frame(maxWidth: .infinity)
+                .clipShape(RoundedRectangle(cornerRadius: AppRadii.lg, style: .continuous))
+                .cardShadow()
+        }
+    }
+
+    private func metaLine(for place: [String: Any]) -> String {
+        [
+            place["category_label"] as? String,
+            place["ilce"] as? String,
+            place["starts_at_label"] as? String ?? place["starts_at"] as? String
+        ]
+        .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .filter { !$0.isEmpty }
+        .joined(separator: " · ")
+    }
+
+    private func bodyText(for place: [String: Any]) -> String {
+        let blurb = (place["blurb"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let body = (place["body"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return !blurb.isEmpty ? blurb : body
+    }
+
+    private func mapsURL(for place: [String: Any]) -> URL? {
+        if let lat = place["lat"] as? Double, let lng = place["lng"] as? Double {
+            return URL(string: "https://maps.apple.com/?ll=\(lat),\(lng)")
+        }
+        if let lat = place["lat"] as? Int, let lng = place["lng"] as? Int {
+            return URL(string: "https://maps.apple.com/?ll=\(lat),\(lng)")
+        }
+        return nil
     }
 
     private func webURL(for place: [String: Any]) -> URL? {

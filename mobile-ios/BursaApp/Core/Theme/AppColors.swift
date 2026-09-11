@@ -14,6 +14,9 @@ enum AppColors {
     static let coral = Color(red: 1.0, green: 0.420, blue: 0.420)
     static let amber = Color(red: 1.0, green: 0.718, blue: 0.302)
     static let welcomeBg = Color(red: 0.863, green: 0.910, blue: 0.863)
+    static let sky = Color(red: 0.494, green: 0.722, blue: 1.0)
+    static let pink = Color(red: 1.0, green: 0.561, blue: 0.671)
+    static let peach = Color(red: 1.0, green: 0.706, blue: 0.635)
 }
 
 enum AppRadii {
