@@ -29,16 +29,9 @@ List<MapTileLayerSpec> appMapTileLayers() {
   }
   return const [
     MapTileLayerSpec(
-      urlTemplate:
-          'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-      attribution: 'Tiles © Esri',
-      maxZoom: 16,
-    ),
-    MapTileLayerSpec(
-      urlTemplate:
-          'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
-      opacity: 0.9,
-      maxZoom: 16,
+      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      attribution: '© OpenStreetMap',
+      maxZoom: 19,
     ),
   ];
 }

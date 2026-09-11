@@ -10,7 +10,6 @@ import '../core/auth/auth_store.dart';
 import '../core/config.dart';
 import '../core/map_tiles.dart';
 import '../core/theme/app_theme.dart';
-import '../widgets/app_refresh.dart';
 import '../widgets/category_pills.dart';
 
 class ExploreScreen extends StatefulWidget {
@@ -97,8 +96,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
     try {
       final auth = context.read<AuthStore>();
       final nearby = await auth.api.nearby(lat: _center.latitude, lng: _center.longitude, r: 2500);
+      if (!mounted) return;
       setState(() => _allNearby = nearby);
       _applyFilter();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Yakındaki mekanlar yüklenemedi: $e')),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -203,51 +208,61 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return appRefreshBox(
-      onRefresh: _bootstrap,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return SizedBox(
-            height: constraints.maxHeight,
-            child: _ExploreBody(
-              mapController: _mapController,
-              center: _center,
-              filter: _filter,
-              filters: _filters,
-              places: _places,
-              selected: _selected,
-              routePoints: _routePoints,
-              routeLoading: _routeLoading,
-              routeInfo: _routeInfo,
-              loading: _loading,
-              onFilter: (v) {
-                setState(() => _filter = v);
-                _applyFilter();
-              },
-              onTapMap: (point) {
-                const dist = Distance();
-                PlaceItem? hit;
-                var best = double.infinity;
-                for (final p in _places) {
-                  if (p.lat == null || p.lng == null) continue;
-                  final d = dist.as(LengthUnit.Meter, point, LatLng(p.lat!, p.lng!));
-                  if (d < best) {
-                    best = d;
-                    hit = p;
-                  }
-                }
-                if (hit != null && best < 120) {
-                  _selectPlace(hit);
-                } else {
-                  _selectPlace(null);
-                }
-              },
-              onRoute: _onRouteTap,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // appRefreshBox içindeki ScrollView sonsuz yükseklik veriyordu — harita ve alt kart görünmüyordu.
+        final height = constraints.maxHeight;
+        return RefreshIndicator(
+          onRefresh: _bootstrap,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: height),
+              child: SizedBox(
+                height: height,
+                child: _ExploreBody(
+                  mapController: _mapController,
+                  center: _center,
+                  filter: _filter,
+                  filters: _filters,
+                  places: _places,
+                  allCount: _allNearby.length,
+                  selected: _selected,
+                  routePoints: _routePoints,
+                  routeLoading: _routeLoading,
+                  routeInfo: _routeInfo,
+                  loading: _loading,
+                  onFilter: (v) {
+                    setState(() => _filter = v);
+                    _applyFilter();
+                  },
+                  onSelect: _selectPlace,
+                  onTapMap: (point) {
+                    const dist = Distance();
+                    PlaceItem? hit;
+                    var best = double.infinity;
+                    for (final p in _places) {
+                      if (p.lat == null || p.lng == null) continue;
+                      final d = dist.as(LengthUnit.Meter, point, LatLng(p.lat!, p.lng!));
+                      if (d < best) {
+                        best = d;
+                        hit = p;
+                      }
+                    }
+                    if (hit != null && best < 120) {
+                      _selectPlace(hit);
+                    } else {
+                      _selectPlace(null);
+                    }
+                  },
+                  onRoute: _onRouteTap,
+                ),
+              ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -259,12 +274,14 @@ class _ExploreBody extends StatelessWidget {
     required this.filter,
     required this.filters,
     required this.places,
+    required this.allCount,
     required this.selected,
     required this.routePoints,
     required this.routeLoading,
     required this.routeInfo,
     required this.loading,
     required this.onFilter,
+    required this.onSelect,
     required this.onTapMap,
     required this.onRoute,
   });
@@ -274,12 +291,14 @@ class _ExploreBody extends StatelessWidget {
   final String filter;
   final List<(String, String)> filters;
   final List<PlaceItem> places;
+  final int allCount;
   final PlaceItem? selected;
   final List<LatLng> routePoints;
   final bool routeLoading;
   final String? routeInfo;
   final bool loading;
   final ValueChanged<String> onFilter;
+  final ValueChanged<PlaceItem?> onSelect;
   final void Function(LatLng point) onTapMap;
   final VoidCallback onRoute;
 
@@ -405,6 +424,67 @@ class _ExploreBody extends StatelessWidget {
             ),
           ),
           if (loading) const Center(child: CircularProgressIndicator()),
+          if (!loading && places.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 72),
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.card.withValues(alpha: 0.95),
+                    borderRadius: BorderRadius.circular(AppRadii.md),
+                    boxShadow: AppShadows.card,
+                  ),
+                  child: Text(
+                    allCount > 0
+                        ? 'Bu filtrede yakında mekan yok. Başka kategori dene.'
+                        : 'Yakında mekan bulunamadı. Konum izni verip yenile.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: AppColors.muted, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ),
+          if (!loading && places.isNotEmpty)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: selected != null ? 92 : 8,
+              height: 56,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                itemCount: places.length.clamp(0, 24),
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, i) {
+                  final p = places[i];
+                  final sel = selected?.slug == p.slug;
+                  return GestureDetector(
+                    onTap: () => onSelect(p),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: sel ? AppColors.nav : AppColors.card.withValues(alpha: 0.94),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: AppShadows.card,
+                        border: Border.all(
+                          color: sel ? AppColors.lime : AppColors.muted.withValues(alpha: 0.15),
+                        ),
+                      ),
+                      child: Text(
+                        p.title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                          color: sel ? AppColors.lime : AppColors.ink,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
           if (selected != null)
             Positioned(
               left: 0,
