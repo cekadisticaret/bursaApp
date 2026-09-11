@@ -165,6 +165,9 @@ class PlaceItem {
     required this.lng,
     required this.subcategory,
     this.isFav = false,
+    this.when = '',
+    this.venueName = '',
+    this.categoryLabel = '',
   });
 
   final String title;
@@ -177,6 +180,9 @@ class PlaceItem {
   final double? lng;
   final String subcategory;
   bool isFav;
+  final String when;
+  final String venueName;
+  final String categoryLabel;
 
   factory PlaceItem.fromJson(Map<String, dynamic> j) => PlaceItem(
         title: j['title']?.toString() ?? '',
@@ -189,6 +195,9 @@ class PlaceItem {
         lng: _asDouble(j['lng']),
         subcategory: j['subcategory']?.toString() ?? j['subcategory_label']?.toString() ?? '',
         isFav: j['is_fav'] == true,
+        when: j['when']?.toString() ?? j['when_long']?.toString() ?? '',
+        venueName: j['venue_name']?.toString() ?? '',
+        categoryLabel: j['category_label']?.toString() ?? '',
       );
 }
 

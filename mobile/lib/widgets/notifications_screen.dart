@@ -6,6 +6,7 @@ import '../core/api/models.dart';
 import '../core/auth/auth_store.dart';
 import '../core/config.dart';
 import '../core/theme/app_theme.dart';
+import '../navigation/place_nav.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -45,46 +46,51 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               itemCount: _events.length,
               itemBuilder: (context, i) {
                 final e = _events[i];
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AppColors.card,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 52,
-                        height: 52,
-                        clipBehavior: Clip.antiAlias,
-                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(14)),
-                        child: e.imgUrl.isNotEmpty
-                            ? CachedNetworkImage(
-                                imageUrl: e.imgUrl.startsWith('http') ? e.imgUrl : '${AppConfig.siteBase}${e.imgUrl}',
-                                fit: BoxFit.cover,
-                              )
-                            : const ColoredBox(
-                                color: AppColors.bgSoft,
-                                child: Icon(Icons.notifications_active, color: AppColors.coral),
-                              ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(e.title, style: const TextStyle(fontWeight: FontWeight.w900)),
-                            Text(
-                              '${e.whenLabel} · ${e.startsAtLabel}',
-                              style: const TextStyle(color: AppColors.muted, fontSize: 13),
+                return Material(
+                  color: AppColors.card,
+                  borderRadius: BorderRadius.circular(20),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: e.slug.isEmpty ? null : () => openPlaceDetail(context, e.slug),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(14),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 52,
+                            height: 52,
+                            clipBehavior: Clip.antiAlias,
+                            decoration: BoxDecoration(borderRadius: BorderRadius.circular(14)),
+                            child: e.imgUrl.isNotEmpty
+                                ? CachedNetworkImage(
+                                    imageUrl: e.imgUrl.startsWith('http') ? e.imgUrl : '${AppConfig.siteBase}${e.imgUrl}',
+                                    fit: BoxFit.cover,
+                                  )
+                                : const ColoredBox(
+                                    color: AppColors.bgSoft,
+                                    child: Icon(Icons.notifications_active, color: AppColors.coral),
+                                  ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(e.title, style: const TextStyle(fontWeight: FontWeight.w900)),
+                                Text(
+                                  '${e.whenLabel} · ${e.startsAtLabel}',
+                                  style: const TextStyle(color: AppColors.muted, fontSize: 13),
+                                ),
+                                if (e.ilce.isNotEmpty)
+                                  Text(e.ilce, style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+                              ],
                             ),
-                            if (e.ilce.isNotEmpty)
-                              Text(e.ilce, style: const TextStyle(color: AppColors.muted, fontSize: 12)),
-                          ],
-                        ),
+                          ),
+                          const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 );
               },

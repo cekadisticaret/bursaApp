@@ -6,6 +6,7 @@ import '../core/auth/auth_store.dart';
 import '../core/theme/app_theme.dart';
 import '../widgets/app_page.dart';
 import '../widgets/destination_card.dart';
+import '../widgets/event_place_card.dart';
 
 class CategoryPlacesScreen extends StatefulWidget {
   const CategoryPlacesScreen({super.key, required this.title, required this.category, this.subcategory});
@@ -22,6 +23,10 @@ class _CategoryPlacesScreenState extends State<CategoryPlacesScreen> {
   List<PlaceItem> _places = [];
   bool _loading = true;
   String? _error;
+
+  static const _eventCategories = {'event', 'concert', 'theater', 'cinema'};
+
+  bool get _eventList => _eventCategories.contains(widget.category);
 
   @override
   void initState() {
@@ -83,7 +88,9 @@ class _CategoryPlacesScreenState extends State<CategoryPlacesScreen> {
                       itemCount: _places.length,
                       itemBuilder: (context, i) => Padding(
                         padding: const EdgeInsets.only(bottom: 14),
-                        child: DestinationCard(place: _places[i]),
+                        child: _eventList
+                            ? EventPlaceCard(place: _places[i])
+                            : DestinationCard(place: _places[i]),
                       ),
                     ),
     );
