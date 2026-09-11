@@ -12,7 +12,7 @@ enum LocationService {
     }
 }
 
-private final class OneShotLocationManager: NSObject, CLLocationManagerDelegate {
+private final class OneShotLocationManager: NSObject, CLLocationManagerDelegate, @unchecked Sendable {
     private let manager = CLLocationManager()
     private let onResult: (CLLocationCoordinate2D?) -> Void
     private var done = false
@@ -27,7 +27,8 @@ private final class OneShotLocationManager: NSObject, CLLocationManagerDelegate 
     func start() {
         manager.requestWhenInUseAuthorization()
         manager.requestLocation()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 8) { [weak self] in
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 8_000_000_000)
             self?.finish(nil)
         }
     }

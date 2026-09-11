@@ -18,12 +18,12 @@ final class ExploreLocation: NSObject, ObservableObject, CLLocationManagerDelega
         manager.requestLocation()
     }
 
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+    nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let loc = locations.last else { return }
-        center = loc.coordinate
+        Task { @MainActor in center = loc.coordinate }
     }
 
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {}
+    nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {}
 }
 
 struct ExploreView: View {
@@ -37,11 +37,9 @@ struct ExploreView: View {
     @State private var routePoints: [CLLocationCoordinate2D] = []
     @State private var routeLoading = false
     @State private var routeInfo: String?
-    @State private var camera: MapCameraPosition = .region(
-        MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: 40.1885, longitude: 29.0610),
-            span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)
-        )
+    @State private var region = MKCoordinateRegion(
+        center: CLLocationCoordinate2D(latitude: 40.1885, longitude: 29.0610),
+        span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08)
     )
 
     private let filters: [(String, String)] = [
@@ -52,26 +50,16 @@ struct ExploreView: View {
         NavigationStack(path: $path) {
             AppPage(title: "Harita") {
                 VStack(spacing: 0) {
-                    Map(position: $camera) {
-                        if routePoints.count >= 2 {
-                            MapPolyline(coordinates: routePoints)
-                                .stroke(AppColors.accentDeep, lineWidth: 4)
+                    ExploreMapView(
+                        region: $region,
+                        places: filtered,
+                        routePoints: routePoints,
+                        selectedId: selectedPlace?.id,
+                        onSelect: { place in
+                            selectedPlace = place
+                            Task { await drawRoute(to: place) }
                         }
-                        ForEach(filtered) { place in
-                            if let lat = place.lat, let lng = place.lng {
-                                Annotation(place.title, coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng)) {
-                                    Button {
-                                        selectedPlace = place
-                                        Task { await drawRoute(to: place) }
-                                    } label: {
-                                        Image(systemName: selectedPlace?.id == place.id ? "mappin.and.ellipse" : "mappin.circle.fill")
-                                            .font(.title2)
-                                            .foregroundStyle(AppColors.coral)
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    )
                     .frame(height: 300)
                     .clipShape(RoundedRectangle(cornerRadius: AppRadii.md))
 
@@ -113,7 +101,10 @@ struct ExploreView: View {
                 await load()
             }
             .onChange(of: location.center.latitude) { _ in
-                camera = .region(MKCoordinateRegion(center: location.center, span: MKCoordinateSpan(latitudeDelta: 0.06, longitudeDelta: 0.06)))
+                region = MKCoordinateRegion(
+                    center: location.center,
+                    span: MKCoordinateSpan(latitudeDelta: 0.06, longitudeDelta: 0.06)
+                )
                 Task { await load() }
             }
             .navigationDestination(for: String.self) { slug in PlaceDetailView(slug: slug) }
@@ -184,10 +175,13 @@ struct ExploreView: View {
             } else {
                 routeInfo = "Haritada"
             }
-            camera = .region(MKCoordinateRegion(
-                center: CLLocationCoordinate2D(latitude: (location.center.latitude + lat) / 2, longitude: (location.center.longitude + lng) / 2),
+            region = MKCoordinateRegion(
+                center: CLLocationCoordinate2D(
+                    latitude: (location.center.latitude + lat) / 2,
+                    longitude: (location.center.longitude + lng) / 2
+                ),
                 span: MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04)
-            ))
+            )
         } catch {
             routePoints = [location.center, CLLocationCoordinate2D(latitude: lat, longitude: lng)]
             routeInfo = "Kuş uçuşu"
@@ -201,5 +195,102 @@ struct ExploreView: View {
     private func formatDur(_ s: Double) -> String {
         let mins = Int(s / 60)
         return mins >= 60 ? "\(mins / 60) sa \(mins % 60) dk" : "\(mins) dk"
+    }
+}
+
+// iOS 16 uyumlu harita (MapKit UIViewRepresentable)
+private struct ExploreMapView: UIViewRepresentable {
+    @Binding var region: MKCoordinateRegion
+    let places: [PlaceItem]
+    let routePoints: [CLLocationCoordinate2D]
+    let selectedId: String?
+    let onSelect: (PlaceItem) -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onSelect: onSelect)
+    }
+
+    func makeUIView(context: Context) -> MKMapView {
+        let map = MKMapView()
+        map.delegate = context.coordinator
+        map.showsUserLocation = true
+        return map
+    }
+
+    func updateUIView(_ mapView: MKMapView, context: Context) {
+        context.coordinator.onSelect = onSelect
+        if !mapView.region.center.isApproximatelyEqual(to: region.center) {
+            mapView.setRegion(region, animated: false)
+        }
+
+        mapView.removeAnnotations(mapView.annotations.filter { !($0 is MKUserLocation) })
+        mapView.removeOverlays(mapView.overlays)
+
+        for place in places {
+            guard let lat = place.lat, let lng = place.lng else { continue }
+            let ann = PlaceMapAnnotation(
+                place: place,
+                coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng)
+            )
+            mapView.addAnnotation(ann)
+        }
+
+        if routePoints.count >= 2 {
+            var coords = routePoints
+            let poly = MKPolyline(coordinates: &coords, count: coords.count)
+            mapView.addOverlay(poly)
+        }
+    }
+
+    final class Coordinator: NSObject, MKMapViewDelegate {
+        var onSelect: (PlaceItem) -> Void
+
+        init(onSelect: @escaping (PlaceItem) -> Void) {
+            self.onSelect = onSelect
+        }
+
+        func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+            guard annotation is PlaceMapAnnotation else { return nil }
+            let id = "placePin"
+            let view = mapView.dequeueReusableAnnotationView(withIdentifier: id) as? MKMarkerAnnotationView
+                ?? MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: id)
+            view.annotation = annotation
+            view.markerTintColor = UIColor(red: 1, green: 0.42, blue: 0.42, alpha: 1)
+            view.canShowCallout = false
+            return view
+        }
+
+        func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
+            guard let ann = view.annotation as? PlaceMapAnnotation else { return }
+            onSelect(ann.place)
+            mapView.deselectAnnotation(ann, animated: false)
+        }
+
+        func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+            guard let poly = overlay as? MKPolyline else {
+                return MKOverlayRenderer(overlay: overlay)
+            }
+            let renderer = MKPolylineRenderer(polyline: poly)
+            renderer.strokeColor = UIColor(red: 0.42, green: 0.561, blue: 0.443, alpha: 1)
+            renderer.lineWidth = 4
+            return renderer
+        }
+    }
+}
+
+private final class PlaceMapAnnotation: NSObject, MKAnnotation {
+    let place: PlaceItem
+    dynamic var coordinate: CLLocationCoordinate2D
+    var title: String? { place.title }
+
+    init(place: PlaceItem, coordinate: CLLocationCoordinate2D) {
+        self.place = place
+        self.coordinate = coordinate
+    }
+}
+
+private extension CLLocationCoordinate2D {
+    func isApproximatelyEqual(to other: CLLocationCoordinate2D, epsilon: Double = 0.0001) -> Bool {
+        abs(latitude - other.latitude) < epsilon && abs(longitude - other.longitude) < epsilon
     }
 }
