@@ -300,13 +300,16 @@ class _ExploreBody extends StatelessWidget {
                 ),
                 children: [
                   ...appMapTileLayers().map(
-                    (layer) => TileLayer(
-                      urlTemplate: layer.urlTemplate,
-                      subdomains: layer.subdomains,
-                      maxZoom: layer.maxZoom.toDouble(),
-                      opacity: layer.opacity,
-                      userAgentPackageName: 'com.bursaapp.mobile',
-                    ),
+                    (layer) {
+                      final tileLayer = TileLayer(
+                        urlTemplate: layer.urlTemplate,
+                        subdomains: layer.subdomains,
+                        maxZoom: layer.maxZoom.toDouble(),
+                        userAgentPackageName: 'com.bursaapp.mobile',
+                      );
+                      if (layer.opacity >= 1) return tileLayer;
+                      return Opacity(opacity: layer.opacity, child: tileLayer);
+                    },
                   ),
                   if (routePoints.length >= 2)
                     PolylineLayer(
