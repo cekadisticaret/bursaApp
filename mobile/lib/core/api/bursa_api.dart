@@ -225,6 +225,17 @@ class BursaApi {
     return LikeResult(liked: data['liked'] == true, likes: _parseInt(data['likes']));
   }
 
+  Future<FavoriteResult> togglePlaceFavorite(String slug) async {
+    final safe = Uri.encodeComponent(slug.trim());
+    final uri = Uri.parse('${AppConfig.apiBase}/places/$safe/favorite');
+    final res = await _client.post(uri, headers: _headers);
+    final data = await _decode(res);
+    return FavoriteResult(
+      isFav: data['is_fav'] == true,
+      favCount: _parseInt(data['fav_count']),
+    );
+  }
+
   Future<void> createEvent(Map<String, dynamic> payload) async {
     final uri = Uri.parse('${AppConfig.apiBase}/places');
     final res = await _client.post(uri, headers: _headers, body: jsonEncode(payload));
@@ -356,4 +367,10 @@ class LikeResult {
   LikeResult({required this.liked, required this.likes});
   final bool liked;
   final int likes;
+}
+
+class FavoriteResult {
+  FavoriteResult({required this.isFav, required this.favCount});
+  final bool isFav;
+  final int favCount;
 }

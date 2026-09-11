@@ -69,7 +69,11 @@ def places():
             limit=limit,
             offset=offset,
         )
-        return jsonify({"ok": True, "places": [place_public(p) for p in rows], "total": total, "limit": limit, "offset": offset})
+        cards = [place_public(p) for p in rows]
+        from features import annotate_favorites
+
+        annotate_favorites(db, load_user(), cards)
+        return jsonify({"ok": True, "places": cards, "total": total, "limit": limit, "offset": offset})
     finally:
         db.close()
 
@@ -83,7 +87,36 @@ def place_one(slug: str):
             return _err("bulunamadı", 404)
         d = place_public(p)
         d["dimensions"] = review_dimension_avgs(db, p.id)
+        from features import annotate_favorites
+
+        annotate_favorites(db, load_user(), [d])
         return jsonify({"ok": True, "place": d})
+    finally:
+        db.close()
+
+
+@bp.route("/places/<slug>/favorite", methods=["POST"])
+@login_required
+def place_favorite_toggle(slug: str):
+    from models import Favorite
+
+    user = load_user()
+    db = SessionLocal()
+    try:
+        p = db.query(Place).filter(Place.slug == slug, Place.status == "approved").first()
+        if p is None:
+            return _err("bulunamadı", 404)
+        fav = db.query(Favorite).filter(Favorite.user_id == user.id, Favorite.place_id == p.id).first()
+        if fav:
+            db.delete(fav)
+            p.fav_count = max(0, (p.fav_count or 0) - 1)
+            is_fav = False
+        else:
+            db.add(Favorite(user_id=user.id, place_id=p.id))
+            p.fav_count = (p.fav_count or 0) + 1
+            is_fav = True
+        db.commit()
+        return jsonify({"ok": True, "is_fav": is_fav, "fav_count": int(p.fav_count or 0)})
     finally:
         db.close()
 

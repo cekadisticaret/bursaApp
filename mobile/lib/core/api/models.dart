@@ -164,6 +164,7 @@ class PlaceItem {
     required this.lat,
     required this.lng,
     required this.subcategory,
+    this.isFav = false,
   });
 
   final String title;
@@ -175,6 +176,7 @@ class PlaceItem {
   final double? lat;
   final double? lng;
   final String subcategory;
+  bool isFav;
 
   factory PlaceItem.fromJson(Map<String, dynamic> j) => PlaceItem(
         title: j['title']?.toString() ?? '',
@@ -186,6 +188,7 @@ class PlaceItem {
         lat: _asDouble(j['lat']),
         lng: _asDouble(j['lng']),
         subcategory: j['subcategory']?.toString() ?? j['subcategory_label']?.toString() ?? '',
+        isFav: j['is_fav'] == true,
       );
 }
 
