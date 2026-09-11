@@ -1,5 +1,27 @@
 import SwiftUI
 
+struct FilterChips: View {
+    let items: [(String, String)]
+    let selected: String
+    let onSelect: (String) -> Void
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(items, id: \.0) { key, label in
+                    Button(label) { onSelect(key) }
+                        .font(.subheadline.weight(.semibold))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(Capsule().fill(selected == key ? AppColors.chipSelected : AppColors.chipBg))
+                        .foregroundStyle(selected == key ? AppColors.nav : AppColors.ink)
+                        .overlay(Capsule().stroke(AppColors.muted.opacity(selected == key ? 0 : 0.15), lineWidth: 1))
+                }
+            }
+        }
+    }
+}
+
 struct MultiFilterChips: View {
     let label: String
     let items: [(String, String)]
@@ -18,32 +40,10 @@ struct MultiFilterChips: View {
                             .font(.caption.weight(.semibold))
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
-                            .background(selected.contains(key) ? AppColors.accentDeep : AppColors.card)
-                            .foregroundStyle(selected.contains(key) ? .white : AppColors.ink)
+                            .background(selected.contains(key) ? AppColors.chipSelected : AppColors.chipBg)
+                            .foregroundStyle(selected.contains(key) ? AppColors.nav : AppColors.ink)
                             .clipShape(Capsule())
                     }
-                }
-            }
-        }
-    }
-}
-
-struct FilterChips: View {
-    let items: [(String, String)]
-    let selected: String
-    let onSelect: (String) -> Void
-
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(items, id: \.0) { key, label in
-                    Button(label) { onSelect(key) }
-                        .font(.caption.weight(.semibold))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(selected == key ? AppColors.accentDeep : AppColors.card)
-                        .foregroundStyle(selected == key ? .white : AppColors.ink)
-                        .clipShape(Capsule())
                 }
             }
         }

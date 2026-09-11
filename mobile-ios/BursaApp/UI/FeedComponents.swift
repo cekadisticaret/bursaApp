@@ -8,28 +8,29 @@ struct FeedSearchBar: View {
         HStack(spacing: 10) {
             Button(action: onSearchTap) {
                 HStack(spacing: 10) {
-                    Image(systemName: "magnifyingglass").foregroundStyle(AppColors.muted)
-                    Text("Mekan, etkinlik, mahalle…")
+                    Image(systemName: "globe.europe.africa.fill").foregroundStyle(AppColors.nav)
+                    Text("Bursa | Mekan, etkinlik ara…")
                         .foregroundStyle(AppColors.muted)
                         .fontWeight(.semibold)
                     Spacer()
+                    Image(systemName: "magnifyingglass").foregroundStyle(AppColors.muted)
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.vertical, 14)
             }
             .buttonStyle(.plain)
             Button(action: onFilterTap) {
-                Image(systemName: "slider.horizontal.3")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(AppColors.lime)
-                    .frame(width: 40, height: 40)
-                    .background(RoundedRectangle(cornerRadius: 14).fill(AppColors.nav))
+                Image(systemName: "line.3.horizontal.decrease")
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(AppColors.nav)
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(AppColors.chipSelected))
             }
         }
         .background(
-            RoundedRectangle(cornerRadius: AppRadii.lg)
-                .fill(AppColors.card)
-                .cardShadow()
+            Capsule()
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.06), radius: 10, y: 4)
         )
     }
 }
@@ -63,15 +64,11 @@ struct FeedFilterSheet: View {
                     Button {
                         dismiss()
                         if key == "hotel" { onHotels() }
-                        else if key == "food" || key == "visit" || key == "event" {
-                            let title = label
-                            onPick(title, key)
-                        } else {
-                            onPick(label, key)
-                        }
+                        else { onPick(label, key) }
                     } label: {
                         Label(label, systemImage: icon)
                             .font(.body.weight(.bold))
+                            .foregroundStyle(AppColors.ink)
                     }
                 }
             }

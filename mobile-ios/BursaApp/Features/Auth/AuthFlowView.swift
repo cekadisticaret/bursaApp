@@ -3,15 +3,15 @@ import SwiftUI
 // MARK: - Auth palette (referans onboarding)
 
 private enum AuthPalette {
-    static let sage = Color(red: 0.710, green: 0.788, blue: 0.604)       // #B5C99A
-    static let forest = Color(red: 0.118, green: 0.224, blue: 0.165)     // #1E392A
-    static let hill = Color(red: 0.420, green: 0.561, blue: 0.443)
-    static let hillDark = Color(red: 0.298, green: 0.451, blue: 0.357)
-    static let balloonYellow = Color(red: 0.965, green: 0.820, blue: 0.380)
-    static let pinOrange = Color(red: 0.976, green: 0.659, blue: 0.145)
-    static let shoeYellow = Color(red: 0.918, green: 0.773, blue: 0.235)
-    static let mapYellow = Color(red: 0.992, green: 0.878, blue: 0.278)
-    static let mutedText = Color(red: 0.165, green: 0.282, blue: 0.212)
+    static let sage = Color(red: 0.98, green: 0.98, blue: 0.985)
+    static let forest = Color(red: 0.09, green: 0.22, blue: 0.16)
+    static let hill = Color(red: 0.09, green: 0.22, blue: 0.16)
+    static let hillDark = Color(red: 0.07, green: 0.18, blue: 0.13)
+    static let balloonYellow = Color(red: 0.93, green: 0.88, blue: 0.80)
+    static let pinOrange = Color(red: 0.93, green: 0.88, blue: 0.80)
+    static let shoeYellow = Color(red: 0.93, green: 0.88, blue: 0.80)
+    static let mapYellow = Color(red: 0.93, green: 0.88, blue: 0.80)
+    static let mutedText = Color(red: 0.52, green: 0.54, blue: 0.58)
 }
 
 struct AuthFlowView: View {

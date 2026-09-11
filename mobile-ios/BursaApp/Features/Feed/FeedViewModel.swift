@@ -17,6 +17,10 @@ enum FeedRow: Identifiable, Sendable {
 final class FeedViewModel: ObservableObject {
     @Published private(set) var rows: [FeedRow] = []
     @Published private(set) var heroEvent: EventItem?
+    @Published private(set) var events: [EventItem] = []
+    @Published private(set) var leaders: [LeaderRow] = []
+    @Published private(set) var locals: [PlaceItem] = []
+    @Published private(set) var destinations: [PlaceItem] = []
     @Published private(set) var isLoading = false
     @Published private(set) var hasMore = false
     @Published var errorMessage: String?
@@ -37,10 +41,20 @@ final class FeedViewModel: ObservableObject {
 
             do {
                 let api = auth.apiClient()
-                let res = try await api.feed(offset: offset)
+                async let feedRes = api.feed(offset: offset)
+                async let leadersRes = api.weeklyLeaders()
+                async let foodRes = api.places(category: "food", limit: 12)
+                async let visitRes = api.places(category: "visit", limit: 12)
+                let res = try await feedRes
                 guard !Task.isCancelled else { return }
 
                 heroEvent = res.events.first
+                events = res.events
+                leaders = Array((try? await leadersRes) ?? []).prefix(8)
+                let food = (try? await foodRes) ?? []
+                let visit = (try? await visitRes) ?? []
+                destinations = visit + food
+                locals = Array(food.prefix(6))
                 hasMore = res.hasMore
                 offset += res.feed.count
 

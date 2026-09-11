@@ -12,6 +12,7 @@ struct ProfileView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
+                TravelTopBar(location: "Bursa, Türkiye", notificationCount: 0, onNotificationsTap: {})
                 header
                 quickTiles
                 if loadingMenu {
@@ -25,6 +26,7 @@ struct ProfileView: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 24)
         }
+        .background(AppColors.bg.ignoresSafeArea())
         .refreshable { await refresh() }
         .task { await refresh() }
         .sheet(isPresented: $showAuth) { AuthFlowView() }
@@ -104,7 +106,7 @@ struct ProfileView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 18)
-            .background(RoundedRectangle(cornerRadius: AppRadii.md).fill(color.opacity(0.18)))
+            .background(RoundedRectangle(cornerRadius: AppRadii.md).fill(AppColors.chipSelected))
         }
         .buttonStyle(.plain)
     }
@@ -134,7 +136,7 @@ struct ProfileView: View {
                 }
             }
         }
-        .background(RoundedRectangle(cornerRadius: AppRadii.lg).fill(AppColors.card))
+        .background(RoundedRectangle(cornerRadius: AppRadii.lg).fill(AppColors.card).shadow(color: .black.opacity(0.05), radius: 8, y: 3))
     }
 
     @MainActor

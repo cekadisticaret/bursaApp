@@ -10,6 +10,7 @@ struct AppPage<Content: View>: View {
         }
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(AppColors.bg, for: .navigationBar)
         .background(AppColors.bg.ignoresSafeArea())
     }
 }

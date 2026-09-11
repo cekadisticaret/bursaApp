@@ -2,83 +2,187 @@ import SwiftUI
 
 struct FoodView: View {
     @EnvironmentObject private var auth: AuthStore
-    @State private var filter = "food"
-    @State private var places: [PlaceItem] = []
-    @State private var loading = true
-    @State private var error: String?
+    @StateObject private var vm = FoodViewModel()
     @State private var path = NavigationPath()
-
-    private let filters: [(String, String)] = [
-        ("food", "Restoran & kafe"),
-        ("live", "Canlı müzik"),
-        ("fun2", "Eğlence"),
-    ]
+    @State private var showSearch = false
+    @State private var showFilter = false
+    @State private var showAuth = false
+    @State private var query = ""
 
     var body: some View {
         NavigationStack(path: $path) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Yeme & içme")
-                        .font(.title2.bold())
-                        .foregroundStyle(AppColors.ink)
-                    filterPills
-                    LoadingStateView(loading: loading, error: error, empty: !loading && places.isEmpty, emptyText: "Sonuç yok")
-                    PlaceListSection(places: places)
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 24)
-            }
-            .refreshable { await load() }
-            .task { await load() }
-            .navigationDestination(for: String.self) { slug in
-                PlaceDetailView(slug: slug)
-            }
-        }
-    }
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 22) {
+                    TravelTopBar(location: "Bursa, Türkiye", notificationCount: 0, onNotificationsTap: {})
+                    (
+                        Text("Lezzet\n")
+                            .foregroundStyle(AppColors.ink)
+                        + Text("durakları ")
+                            .foregroundStyle(AppColors.nav)
+                        + Text("keşfet")
+                            .foregroundStyle(AppColors.ink)
+                    )
+                    .font(.system(size: 28, weight: .bold))
+                    TravelSearchCapsule(query: $query, placeholder: "Restoran, kafe ara…", onSearchTap: { showSearch = true })
+                        .onChange(of: query) { _ in vm.applyFilters() }
 
-    private var filterPills: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(filters, id: \.0) { key, label in
-                    Button(label) {
-                        filter = key
-                        Task { await load() }
+                    TravelSectionHeader(title: "Önerilen", onSeeAll: { showSearch = true })
+                    if vm.suggested.isEmpty {
+                        travelSkeleton(height: 190)
+                    } else {
+                        TabView {
+                            ForEach(vm.suggested) { place in
+                                NavigationLink(value: place.detailSlug) {
+                                    TravelFeaturedCard(place: place)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .tabViewStyle(.page(indexDisplayMode: .always))
+                        .frame(height: 230)
                     }
-                    .font(.caption.weight(.semibold))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(filter == key ? AppColors.accentDeep : AppColors.card)
-                    .foregroundStyle(filter == key ? .white : AppColors.ink)
-                    .clipShape(Capsule())
+
+                    TravelSectionHeader(title: "Popüler mekanlar", onSeeAll: { showSearch = true })
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible())], spacing: 12) {
+                        ForEach(vm.featured) { place in
+                            NavigationLink(value: place.detailSlug) {
+                                foodGridCard(place)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+
+                    TravelSectionHeader(title: "Topluluk paylaşımları")
+                    ForEach(vm.posts) { post in
+                        foodPostCard(post)
+                    }
+                    ForEach(vm.placePosts) { place in
+                        NavigationLink(value: place.detailSlug) {
+                            TravelFeaturedCard(place: place)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
+                .padding(.horizontal, 18)
+                .padding(.bottom, 100)
             }
+            .background(AppColors.bg.ignoresSafeArea())
+            .refreshable { await vm.load(auth: auth) }
+            .task { await vm.load(auth: auth) }
+            .navigationDestination(for: String.self) { slug in PlaceDetailView(slug: slug) }
+            .sheet(isPresented: $showSearch) { NavigationStack { PlaceSearchView(initialQuery: vm.query) } }
+            .sheet(isPresented: $showFilter) {
+                foodFilterSheet
+            }
+            .sheet(isPresented: $showAuth) { AuthFlowView() }
         }
     }
 
-    @MainActor
-    private func load() async {
+    private func foodGridCard(_ place: PlaceItem) -> some View {
+        ZStack(alignment: .bottomLeading) {
+            RemoteImage(url: place.imgUrl, placeholder: "fork.knife")
+                .frame(height: 150).frame(maxWidth: .infinity).clipped()
+            LinearGradient(colors: [.clear, .black.opacity(0.6)], startPoint: .center, endPoint: .bottom)
+            Text(place.title).font(.caption.weight(.heavy)).foregroundStyle(.white).padding(10).lineLimit(2)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: AppRadii.md))
+    }
+
+    private func foodPostCard(_ item: FeedItem) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(item.user.name).font(.subheadline.weight(.bold))
+                Spacer()
+                HStack(spacing: 4) {
+                    Image(systemName: "star.fill").foregroundStyle(AppColors.amber).font(.caption2)
+                    Text(travelRating(seed: item.id)).font(.caption.weight(.heavy))
+                }
+            }
+            if let first = item.images.first {
+                RemoteImage(url: first, placeholder: "photo")
+                    .frame(height: 180).frame(maxWidth: .infinity).clipped()
+                    .clipShape(RoundedRectangle(cornerRadius: AppRadii.md))
+            }
+            if !item.body.isEmpty {
+                Text(item.body).font(.subheadline).foregroundStyle(AppColors.muted)
+            }
+        }
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: AppRadii.md).fill(.white).shadow(color: .black.opacity(0.05), radius: 8, y: 3))
+    }
+
+    private var foodFilterSheet: some View {
+        NavigationStack {
+            List {
+                Button("Restoran & kafe") { vm.categoryFilter = "food"; Task { await vm.load(auth: auth) }; showFilter = false }
+                Button("Canlı müzik") { vm.categoryFilter = "live"; Task { await vm.load(auth: auth) }; showFilter = false }
+                Button("Eğlence") { vm.categoryFilter = "fun2"; Task { await vm.load(auth: auth) }; showFilter = false }
+            }
+            .navigationTitle("Filtrele")
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Kapat") { showFilter = false } } }
+        }
+        .presentationDetents([.medium])
+    }
+}
+
+@MainActor
+final class FoodViewModel: ObservableObject {
+    @Published var query = ""
+    @Published var categoryFilter = "food"
+    @Published private(set) var allPlaces: [PlaceItem] = []
+    @Published private(set) var suggested: [PlaceItem] = []
+    @Published private(set) var featured: [PlaceItem] = []
+    @Published private(set) var posts: [FeedItem] = []
+    @Published private(set) var placePosts: [PlaceItem] = []
+    @Published private(set) var loading = false
+
+    func load(auth: AuthStore) async {
         loading = true
-        error = nil
         defer { loading = false }
         do {
             let api = auth.apiClient()
-            switch filter {
+            async let feedRes = api.feed(offset: 0)
+            var rows: [PlaceItem]
+            switch categoryFilter {
             case "live":
-                let funRows = try await api.places(category: "fun", spec: "Canlı müzik", limit: 40)
-                let barRows = try await api.places(category: "nightlife", sub: "canli-muzik", limit: 40)
+                let funRows = try await api.places(category: "fun", spec: "Canlı müzik", limit: 20)
+                let barRows = try await api.places(category: "nightlife", sub: "canli-muzik", limit: 20)
                 var seen = Set<String>()
-                places = (funRows + barRows).filter { p in
+                rows = (funRows + barRows).filter { p in
                     guard !p.slug.isEmpty, !seen.contains(p.slug) else { return false }
                     seen.insert(p.slug)
                     return true
                 }
             case "fun2":
-                places = try await api.places(category: "fun", limit: 24)
+                rows = try await api.places(category: "fun", limit: 30)
             default:
-                places = try await api.places(category: "food", limit: 24)
+                rows = try await api.places(category: "food", limit: 40)
             }
+            allPlaces = rows
+            posts = try await feedRes.feed
+            applyFilters()
         } catch {
-            self.error = error.localizedDescription
+            allPlaces = []
+            posts = []
+            applyFilters()
         }
     }
+
+    func applyFilters() {
+        var rows = allPlaces
+        if !query.isEmpty {
+            rows = rows.filter {
+                $0.title.localizedCaseInsensitiveContains(query)
+                    || $0.ilce.localizedCaseInsensitiveContains(query)
+                    || $0.blurb.localizedCaseInsensitiveContains(query)
+            }
+        }
+        suggested = Array(rows.prefix(5))
+        featured = Array(rows.dropFirst(5).prefix(4))
+        placePosts = Array(rows.dropFirst(9).prefix(8))
+    }
+}
+
+private func travelSkeleton(height: CGFloat) -> some View {
+    RoundedRectangle(cornerRadius: AppRadii.md).fill(AppColors.bgSoft).frame(height: height)
 }

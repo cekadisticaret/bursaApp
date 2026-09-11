@@ -19,17 +19,17 @@ struct DestinationCard: View {
                 .clipShape(RoundedRectangle(cornerRadius: AppRadii.sm, style: .continuous))
             VStack(alignment: .leading, spacing: 6) {
                 Text(place.title)
-                    .font(.headline.weight(.heavy))
+                    .font(.headline.weight(.bold))
                     .foregroundStyle(AppColors.ink)
                     .multilineTextAlignment(.leading)
                 if !place.categoryLabel.isEmpty {
                     Text(place.categoryLabel)
                         .font(.caption2.weight(.heavy))
-                        .foregroundStyle(AppColors.coral)
+                        .foregroundStyle(AppColors.nav)
                 } else if !place.ilce.isEmpty {
                     Text(place.ilce)
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(AppColors.accentDeep)
+                        .foregroundStyle(AppColors.muted)
                 }
                 if !place.blurb.isEmpty {
                     Text(place.blurb)
@@ -39,9 +39,7 @@ struct DestinationCard: View {
                 }
             }
             Spacer(minLength: 0)
-            Button {
-                Task { await toggleFavorite() }
-            } label: {
+            Button { Task { await toggleFavorite() } } label: {
                 if favBusy {
                     ProgressView().scaleEffect(0.8)
                 } else {
@@ -52,13 +50,12 @@ struct DestinationCard: View {
             .buttonStyle(.plain)
             .disabled(favBusy || place.detailSlug.isEmpty)
         }
-        .padding(12)
+        .padding(14)
         .background(
             RoundedRectangle(cornerRadius: AppRadii.lg, style: .continuous)
                 .fill(AppColors.card)
-                .overlay(RoundedRectangle(cornerRadius: AppRadii.lg).stroke(AppColors.muted.opacity(0.12)))
+                .shadow(color: .black.opacity(0.05), radius: 8, y: 3)
         )
-        .cardShadow()
         .sheet(isPresented: $showAuth) { AuthFlowView() }
     }
 
@@ -90,13 +87,13 @@ struct EventPlaceCard: View {
                 .clipShape(RoundedRectangle(cornerRadius: AppRadii.sm))
             VStack(alignment: .leading, spacing: 4) {
                 Text(place.title)
-                    .font(.subheadline.weight(.black))
+                    .font(.subheadline.weight(.bold))
                     .foregroundStyle(AppColors.ink)
                     .lineLimit(2)
                 if !place.categoryLabel.isEmpty {
                     Text(place.categoryLabel)
                         .font(.caption2.weight(.heavy))
-                        .foregroundStyle(AppColors.coral)
+                        .foregroundStyle(AppColors.nav)
                 }
                 if !meta.isEmpty {
                     Text(meta).font(.caption).foregroundStyle(AppColors.muted).lineLimit(2)
@@ -109,12 +106,12 @@ struct EventPlaceCard: View {
                 .foregroundStyle(AppColors.muted)
                 .padding(.top, 24)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: AppRadii.lg)
                 .fill(AppColors.card)
-                .overlay(RoundedRectangle(cornerRadius: AppRadii.lg).stroke(AppColors.muted.opacity(0.12)))
+                .shadow(color: .black.opacity(0.05), radius: 8, y: 3)
         )
     }
 
