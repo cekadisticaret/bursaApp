@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/auth/auth_store.dart';
 import '../core/theme/app_theme.dart';
 import '../navigation/app_routes.dart';
+import 'auth_forgot_password_screen.dart';
 import 'auth_register_screen.dart';
 
 class AuthLoginScreen extends StatefulWidget {
@@ -49,6 +50,13 @@ class _AuthLoginScreenState extends State<AuthLoginScreen> {
     } catch (e) {
       setState(() => _error = e.toString());
     }
+  }
+
+  Future<void> _openForgotPassword() async {
+    await Navigator.push<void>(
+      context,
+      appRoute(AuthForgotPasswordScreen(initialEmail: _email.text)),
+    );
   }
 
   Future<void> _openRegister() async {
@@ -110,6 +118,16 @@ class _AuthLoginScreenState extends State<AuthLoginScreen> {
                 suffixIcon: IconButton(
                   onPressed: () => setState(() => _obscure = !_obscure),
                   icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                ),
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: auth.loading ? null : _openForgotPassword,
+                child: const Text(
+                  'Şifremi unuttum',
+                  style: TextStyle(color: AppColors.nav, fontWeight: FontWeight.w800),
                 ),
               ),
             ),

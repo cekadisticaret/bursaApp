@@ -142,6 +142,17 @@ class BursaApi {
     return AuthUser.fromJson(data['user'] as Map<String, dynamic>);
   }
 
+  Future<String> forgotPassword(String email) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/auth/forgot-password');
+    final res = await _client.post(
+      uri,
+      headers: _headers,
+      body: jsonEncode({'email': email.trim()}),
+    );
+    final data = await _decode(res);
+    return data['message']?.toString() ?? 'E-posta gönderildi.';
+  }
+
   Future<AuthUser> register(String name, String email, String password) async {
     final uri = Uri.parse('${AppConfig.apiBase}/auth/register');
     final res = await _client.post(

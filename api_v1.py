@@ -293,6 +293,28 @@ def login():
         db.close()
 
 
+@bp.route("/auth/forgot-password", methods=["POST"])
+def forgot_password():
+    if not rate_ok("forgot_password", limit=3, window=900):
+        return _err("çok sık deneme — 15 dk sonra tekrar dene", 429)
+    body = _json()
+    email = (body.get("email") or "").strip().lower()
+    if "@" not in email or "." not in email.split("@")[-1]:
+        return _err("geçerli e-posta gir")
+    db = SessionLocal()
+    try:
+        from password_reset import send_new_password_email
+
+        send_new_password_email(db, email)
+        # E-posta kayıtlı olmasa da aynı yanıt (enumeration önleme)
+        return jsonify({
+            "ok": True,
+            "message": "Kayıtlıysa yeni şifren e-posta adresine gönderildi. Gelen kutunu ve spam klasörünü kontrol et.",
+        })
+    finally:
+        db.close()
+
+
 def _fill_place(p: Place, body: dict, *, is_admin: bool, db) -> str | None:
     title = (body.get("title") or p.title or "").strip()
     if not title:
