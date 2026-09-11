@@ -37,6 +37,12 @@ actor BursaAPIClient {
         return LikeResult(liked: liked, likes: likes)
     }
 
+    func upcomingEvents() async throws -> [EventItem] {
+        let url = AppConfig.apiBase.appendingPathComponent("events/upcoming")
+        let json = try await getJSON(url: url)
+        return (json["events"] as? [[String: Any]] ?? []).compactMap(EventItem.decode(from:))
+    }
+
     // MARK: - Auth
 
     func login(email: String, password: String) async throws -> (AuthUser, String) {
@@ -85,18 +91,33 @@ actor BursaAPIClient {
         return h
     }
 
-    private func getJSON(url: URL) async throws -> [String: Any] {
+    func getJSON(url: URL) async throws -> [String: Any] {
         var req = URLRequest(url: url)
         req.httpMethod = "GET"
         headers().forEach { req.setValue($1, forHTTPHeaderField: $0) }
         return try await perform(req)
     }
 
-    private func postJSON(url: URL, body: [String: Any]) async throws -> [String: Any] {
+    func postJSON(url: URL, body: [String: Any]) async throws -> [String: Any] {
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         headers().forEach { req.setValue($1, forHTTPHeaderField: $0) }
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
+        return try await perform(req)
+    }
+
+    func patchJSON(url: URL, body: [String: Any]) async throws -> [String: Any] {
+        var req = URLRequest(url: url)
+        req.httpMethod = "PATCH"
+        headers().forEach { req.setValue($1, forHTTPHeaderField: $0) }
+        req.httpBody = try JSONSerialization.data(withJSONObject: body)
+        return try await perform(req)
+    }
+
+    func deleteJSON(url: URL) async throws -> [String: Any] {
+        var req = URLRequest(url: url)
+        req.httpMethod = "DELETE"
+        headers().forEach { req.setValue($1, forHTTPHeaderField: $0) }
         return try await perform(req)
     }
 
@@ -113,7 +134,7 @@ actor BursaAPIClient {
         return obj
     }
 
-    private func decodeUser(_ value: Any?) throws -> AuthUser {
+    func decodeUser(_ value: Any?) throws -> AuthUser {
         guard let dict = value as? [String: Any] else {
             throw APIError(message: "Kullanıcı verisi yok", statusCode: 500)
         }

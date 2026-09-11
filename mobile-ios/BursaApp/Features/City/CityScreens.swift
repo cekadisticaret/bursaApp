@@ -3,6 +3,8 @@ import SwiftUI
 struct PharmacyView: View {
     @EnvironmentObject private var auth: AuthStore
     @State private var rows: [[String: Any]] = []
+    @State private var ilceler: [String] = []
+    @State private var ilce = ""
     @State private var loading = true
     @State private var error: String?
 
@@ -10,6 +12,13 @@ struct PharmacyView: View {
         AppPage(title: "Nöbetçi eczaneler") {
             ScrollView {
                 VStack(spacing: 12) {
+                    if !ilceler.isEmpty {
+                        FilterChips(
+                            items: [("", "Tümü")] + ilceler.map { ($0, $0) },
+                            selected: ilce,
+                            onSelect: { ilce = $0; Task { await load() } }
+                        )
+                    }
                     LoadingStateView(loading: loading, error: error, empty: !loading && rows.isEmpty, emptyText: "Bugün nöbetçi eczane yok")
                     ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                         pharmacyCard(row)
@@ -24,7 +33,8 @@ struct PharmacyView: View {
 
     @ViewBuilder
     private func pharmacyCard(_ row: [String: Any]) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        let slug = (row["slug"] as? String ?? PlaceItem.slugFromPath(row["path"] as? String ?? "")).trimmingCharacters(in: .whitespacesAndNewlines)
+        let content = VStack(alignment: .leading, spacing: 6) {
             Text(row["title"] as? String ?? row["name"] as? String ?? "Eczane")
                 .font(.headline)
             if let ilce = row["ilce"] as? String, !ilce.isEmpty {
@@ -41,6 +51,15 @@ struct PharmacyView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .background(RoundedRectangle(cornerRadius: AppRadii.md).fill(AppColors.card))
+
+        if slug.isEmpty {
+            content
+        } else {
+            NavigationLink(value: "pharmacy:\(slug)") {
+                content
+            }
+            .buttonStyle(.plain)
+        }
     }
 
     @MainActor
@@ -49,8 +68,14 @@ struct PharmacyView: View {
         error = nil
         defer { loading = false }
         do {
-            let json = try await auth.apiClient().nobetciEczaneler()
+            let coord = await LocationService.requestLocation()
+            let json = try await auth.apiClient().nobetciEczaneler(
+                ilce: ilce.isEmpty ? nil : ilce,
+                lat: coord?.latitude,
+                lng: coord?.longitude
+            )
             rows = json["pharmacies"] as? [[String: Any]] ?? json["places"] as? [[String: Any]] ?? []
+            ilceler = json["ilceler"] as? [String] ?? []
         } catch {
             self.error = error.localizedDescription
         }
@@ -60,40 +85,99 @@ struct PharmacyView: View {
 struct NewsView: View {
     @EnvironmentObject private var auth: AuthStore
     @State private var rows: [[String: Any]] = []
+    @State private var topics: [(String, String)] = []
+    @State private var topic = ""
+    @State private var page = 1
+    @State private var hasMore = false
     @State private var loading = true
+    @State private var query = ""
 
     var body: some View {
         AppPage(title: "Bursa haberleri") {
-            ScrollView {
-                LazyVStack(spacing: 12) {
-                    if loading { ProgressView().padding() }
-                    ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(row["title"] as? String ?? "Haber")
-                                .font(.headline)
-                            if let sum = row["summary"] as? String ?? row["blurb"] as? String {
-                                Text(sum).font(.caption).foregroundStyle(AppColors.muted).lineLimit(3)
-                            }
-                        }
-                        .padding(12)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(RoundedRectangle(cornerRadius: AppRadii.md).fill(AppColors.card))
-                    }
+            VStack(spacing: 0) {
+                HStack {
+                    TextField("Ara…", text: $query)
+                        .textFieldStyle(.roundedBorder)
+                        .submitLabel(.search)
+                        .onSubmit { Task { await load(refresh: true) } }
                 }
-                .padding(16)
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                if !topics.isEmpty {
+                    FilterChips(items: [("", "Tümü")] + topics, selected: topic) { topic = $0; Task { await load(refresh: true) } }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                }
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        if loading && rows.isEmpty { ProgressView().padding() }
+                        ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                            newsCard(row)
+                        }
+                        if hasMore && !loading {
+                            Button("Daha fazla") { Task { await loadMore() } }
+                                .foregroundStyle(AppColors.accentDeep)
+                        }
+                    }
+                    .padding(16)
+                }
             }
-            .refreshable { await load() }
-            .task { await load() }
+            .refreshable { await load(refresh: true) }
+            .navigationDestination(for: String.self) { slug in
+                if slug.hasPrefix("news:") {
+                    NewsDetailView(slug: String(slug.dropFirst(5)))
+                } else {
+                    PlaceDetailView(slug: slug)
+                }
+            }
+            .task { await load(refresh: true) }
+        }
+    }
+
+    @ViewBuilder
+    private func newsCard(_ row: [String: Any]) -> some View {
+        let slug = row["slug"] as? String ?? ""
+        let card = VStack(alignment: .leading, spacing: 6) {
+            Text(row["title"] as? String ?? "Haber")
+                .font(.headline)
+            if let sum = row["summary"] as? String ?? row["blurb"] as? String {
+                Text(sum).font(.caption).foregroundStyle(AppColors.muted).lineLimit(3)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: AppRadii.md).fill(AppColors.card))
+
+        if slug.isEmpty {
+            card
+        } else {
+            NavigationLink(value: "news:\(slug)") { card }.buttonStyle(.plain)
         }
     }
 
     @MainActor
-    private func load() async {
+    private func load(refresh: Bool) async {
+        if refresh { page = 1 }
         loading = true
         defer { loading = false }
-        if let json = try? await auth.apiClient().bursaNews() {
-            rows = json["news"] as? [[String: Any]] ?? json["items"] as? [[String: Any]] ?? []
+        if let json = try? await auth.apiClient().bursaNews(page: page, topic: topic.isEmpty ? nil : topic, q: query.isEmpty ? nil : query) {
+            let next = json["news"] as? [[String: Any]] ?? json["items"] as? [[String: Any]] ?? []
+            rows = refresh ? next : rows + next
+            hasMore = json["has_more"] as? Bool ?? false
+            if let rawTopics = json["topics"] as? [[String: Any]] {
+                topics = rawTopics.compactMap { row in
+                    guard let key = row["key"] as? String ?? row["slug"] as? String,
+                          let label = row["label"] as? String ?? row["title"] as? String else { return nil }
+                    return (key, label)
+                }
+            }
         }
+    }
+
+    @MainActor
+    private func loadMore() async {
+        page += 1
+        await load(refresh: false)
     }
 }
 
@@ -233,28 +317,27 @@ struct LeadersView: View {
     var body: some View {
         AppPage(title: "Haftanın liderleri") {
             List(leaders) { row in
-                HStack {
-                    Text("#\(row.rank)").font(.headline).foregroundStyle(AppColors.accentDeep)
+                HStack(spacing: 12) {
+                    Text("#\(row.rank)").font(.headline).foregroundStyle(AppColors.accentDeep).frame(width: 32)
+                    if !row.avatarUrl.isEmpty {
+                        RemoteImage(url: row.avatarUrl, placeholder: "person.circle.fill")
+                            .frame(width: 36, height: 36)
+                            .clipShape(Circle())
+                    }
                     Text(row.name)
                     Spacer()
                     Text("\(row.points) puan").foregroundStyle(AppColors.muted)
                 }
             }
-            .task {
-                if let rows = try? await auth.apiClient().weeklyLeaders() {
-                    leaders = rows
-                }
-            }
+            .refreshable { await load() }
+            .task { await load() }
         }
     }
-}
 
-struct ActivityBuddyView: View {
-    var body: some View {
-        AppPage(title: "Partner ara") {
-            Text("Aktivite partner ilanları — giriş yaparak listeyi görebilirsin.")
-                .foregroundStyle(AppColors.muted)
-                .padding()
+    @MainActor
+    private func load() async {
+        if let rows = try? await auth.apiClient().weeklyLeaders() {
+            leaders = rows
         }
     }
 }

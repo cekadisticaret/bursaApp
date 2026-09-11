@@ -26,6 +26,13 @@ struct RemoteImage: View {
         .background(AppColors.bgSoft)
     }
 
+    private var resolvedURL: URL? {
+        let u = url.trimmingCharacters(in: .whitespacesAndNewlines)
+        if u.isEmpty { return nil }
+        if u.hasPrefix("http") { return URL(string: u) }
+        return URL(string: u, relativeTo: AppConfig.siteBase)?.absoluteURL
+    }
+
     private var placeholderView: some View {
         Image(systemName: placeholder)
             .font(.title2)

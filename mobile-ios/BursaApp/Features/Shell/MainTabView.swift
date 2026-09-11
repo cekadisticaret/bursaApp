@@ -26,7 +26,10 @@ struct MainTabView: View {
     @EnvironmentObject private var auth: AuthStore
     @State private var tab: ShellTab = .feed
     @State private var profilePath = NavigationPath()
+    @State private var feedPath = NavigationPath()
     @State private var showAuth = false
+    @State private var showCreateEvent = false
+    @State private var showNotifications = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -36,13 +39,21 @@ struct MainTabView: View {
                 AppHeaderView(
                     showGreeting: tab == .feed,
                     userName: auth.user?.displayName,
-                    onProfileTap: { tab = .profile }
+                    avatarUrl: auth.user?.avatarUrl,
+                    onProfileTap: { tab = .profile },
+                    onNotificationsTap: { showNotifications = true }
                 )
                 .padding(.horizontal, 16)
                 .padding(.bottom, 8)
 
-                TabContent(tab: tab, profilePath: $profilePath, tabSelection: $tab)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                TabContent(
+                    tab: tab,
+                    profilePath: $profilePath,
+                    feedPath: $feedPath,
+                    tabSelection: $tab,
+                    showAuth: $showAuth
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .safeAreaInset(edge: .bottom) {
                 Color.clear.frame(height: 88)
@@ -52,7 +63,7 @@ struct MainTabView: View {
                 selection: $tab,
                 onCreateTap: {
                     if auth.isLoggedIn {
-                        // TODO: CreateEventView
+                        showCreateEvent = true
                     } else {
                         showAuth = true
                     }
@@ -62,18 +73,48 @@ struct MainTabView: View {
         .sheet(isPresented: $showAuth) {
             AuthFlowView()
         }
+        .sheet(isPresented: $showCreateEvent) {
+            CreateEventView()
+        }
+        .sheet(isPresented: $showNotifications) {
+            NavigationStack {
+                NotificationsView()
+            }
+        }
     }
 }
 
 private struct TabContent: View {
     let tab: ShellTab
     @Binding var profilePath: NavigationPath
+    @Binding var feedPath: NavigationPath
     @Binding var tabSelection: ShellTab
+    @Binding var showAuth: Bool
 
     var body: some View {
         switch tab {
         case .feed:
-            FeedView()
+            NavigationStack(path: $feedPath) {
+                FeedView(
+                    onSearchTap: { feedPath.append(AppNavRoute.search("")) },
+                    onChipTap: { title, category in
+                        feedPath.append(AppNavRoute.category(title, category))
+                    }
+                )
+                    .navigationDestination(for: AppNavRoute.self) { route in
+                        switch route {
+                        case .search(let q):
+                            PlaceSearchView(initialQuery: q)
+                        case .category(let title, let cat):
+                            CategoryPlacesView(title: title, category: cat)
+                        default:
+                            EmptyView()
+                        }
+                    }
+                    .navigationDestination(for: String.self) { slug in
+                        PlaceDetailView(slug: slug)
+                    }
+            }
         case .explore:
             ExploreView()
         case .food:
@@ -87,32 +128,22 @@ private struct TabContent: View {
                     .navigationDestination(for: String.self) { slug in
                         PlaceDetailView(slug: slug)
                     }
+                    .navigationDestination(for: AppNavRoute.self) { route in
+                        if case .settings = route {
+                            ProfileSettingsView()
+                        }
+                    }
             }
         }
-    }
-}
-
-struct PlaceholderTabView: View {
-    let title: String
-    let subtitle: String
-
-    var body: some View {
-        VStack(spacing: 12) {
-            Text(title)
-                .font(.title2.bold())
-                .foregroundStyle(AppColors.ink)
-            Text(subtitle)
-                .font(.subheadline)
-                .foregroundStyle(AppColors.muted)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
 struct AppHeaderView: View {
     let showGreeting: Bool
     let userName: String?
+    let avatarUrl: String?
     let onProfileTap: () -> Void
+    let onNotificationsTap: () -> Void
 
     var body: some View {
         HStack {
@@ -127,10 +158,21 @@ struct AppHeaderView: View {
                 }
             }
             Spacer()
+            Button(action: onNotificationsTap) {
+                Image(systemName: "bell")
+                    .font(.title3)
+                    .foregroundStyle(AppColors.ink)
+            }
             Button(action: onProfileTap) {
-                Image(systemName: "person.crop.circle")
-                    .font(.title2)
-                    .foregroundStyle(AppColors.accentDeep)
+                if let avatarUrl, !avatarUrl.isEmpty {
+                    RemoteImage(url: avatarUrl, placeholder: "person.crop.circle")
+                        .frame(width: 34, height: 34)
+                        .clipShape(Circle())
+                } else {
+                    Image(systemName: "person.crop.circle")
+                        .font(.title2)
+                        .foregroundStyle(AppColors.accentDeep)
+                }
             }
         }
         .padding(.top, 4)

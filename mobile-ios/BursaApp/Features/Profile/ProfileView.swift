@@ -44,6 +44,11 @@ struct ProfileView: View {
                     Task { await auth.logout(); await refresh() }
                 }
                 .buttonStyle(.bordered)
+                Button("Hesap ayarları") {
+                    navPath.append(AppNavRoute.settings)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(AppColors.nav)
             } else {
                 Image(systemName: "person.crop.circle.badge.plus")
                     .font(.system(size: 56))

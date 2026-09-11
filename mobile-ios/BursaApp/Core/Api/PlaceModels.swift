@@ -34,9 +34,10 @@ struct PlaceItem: Identifiable, Sendable, Hashable {
         let path = json["path"] as? String ?? ""
         let slugRaw = (json["slug"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let slug = slugRaw.isEmpty ? slugFromPath(path) : slugRaw
-        guard !slug.isEmpty || !(json["title"] as? String ?? "").isEmpty else { return nil }
+        let title = json["title"] as? String ?? json["name"] as? String ?? ""
+        guard !slug.isEmpty || !title.isEmpty else { return nil }
         return PlaceItem(
-            title: json["title"] as? String ?? "",
+            title: title,
             slug: slug,
             category: json["category"] as? String ?? "",
             ilce: json["ilce"] as? String ?? "",
@@ -55,6 +56,14 @@ struct PlaceItem: Identifiable, Sendable, Hashable {
     static func list(from json: [String: Any], key: String = "places") -> [PlaceItem] {
         (json[key] as? [[String: Any]] ?? []).compactMap(decode(from:))
     }
+
+    static func fromGroups(_ json: [String: Any]) -> [PlaceItem] {
+        let groups = json["groups"] as? [[String: Any]] ?? []
+        var all: [PlaceItem] = []
+        for g in groups { all.append(contentsOf: list(from: g)) }
+        if all.isEmpty { all = list(from: json) }
+        return all
+    }
 }
 
 struct MenuLink: Identifiable, Sendable, Hashable {
@@ -62,13 +71,8 @@ struct MenuLink: Identifiable, Sendable, Hashable {
     let label: String
     let path: String
     let category: String?
-
     static func decode(from json: [String: Any]) -> MenuLink {
-        MenuLink(
-            label: json["label"] as? String ?? "",
-            path: json["path"] as? String ?? "",
-            category: json["category"] as? String
-        )
+        MenuLink(label: json["label"] as? String ?? "", path: json["path"] as? String ?? "", category: json["category"] as? String)
     }
 }
 
@@ -77,12 +81,10 @@ struct MenuGroup: Identifiable, Sendable {
     let title: String
     let icon: String
     let items: [MenuLink]
-
     static func decodeList(from json: [String: Any]) -> [MenuGroup] {
         (json["groups"] as? [[String: Any]] ?? []).compactMap { row in
             guard let title = row["title"] as? String else { return nil }
-            let items = (row["items"] as? [[String: Any]] ?? []).map(MenuLink.decode(from:))
-            return MenuGroup(title: title, icon: row["icon"] as? String ?? "", items: items)
+            return MenuGroup(title: title, icon: row["icon"] as? String ?? "", items: (row["items"] as? [[String: Any]] ?? []).map(MenuLink.decode(from:)))
         }
     }
 }
@@ -93,26 +95,78 @@ struct LeaderRow: Identifiable, Sendable {
     let name: String
     let points: Int
     let avatarUrl: String
-
     static func decode(from json: [String: Any]) -> LeaderRow? {
-        guard let name = json["name"] as? String else { return nil }
+        let u = json["user"] as? [String: Any] ?? json
+        let name = u["name"] as? String ?? json["name"] as? String
+        guard let name, !name.isEmpty else { return nil }
         return LeaderRow(
             rank: JSONValue.int(json["rank"]),
             name: name,
-            points: JSONValue.int(json["points"]),
-            avatarUrl: json["avatar_url"] as? String ?? ""
+            points: JSONValue.int(u["points"] ?? u["loyalty_points"]),
+            avatarUrl: u["avatar_url"] as? String ?? ""
+        )
+    }
+}
+
+struct ActivityType: Identifiable, Sendable {
+    var id: String { key }
+    let key: String
+    let label: String
+    let emoji: String
+    static func decode(from json: [String: Any]) -> ActivityType {
+        ActivityType(key: json["key"] as? String ?? "other", label: json["label"] as? String ?? "", emoji: json["emoji"] as? String ?? "✨")
+    }
+}
+
+struct ActivitySeek: Identifiable, Sendable {
+    let id: Int
+    let activityType: String
+    let activityLabel: String
+    let emoji: String
+    let title: String
+    let host: String
+    let ilce: String
+    let venue: String
+    let timeLabel: String
+    let note: String
+    let pointsMin: Int
+    let slotsNeeded: Int
+    let spotsLeft: Int
+    let joined: Bool
+    let pending: Bool
+    let isMine: Bool
+    let contactHint: String
+
+    static func decode(from json: [String: Any]) -> ActivitySeek {
+        ActivitySeek(
+            id: JSONValue.int(json["id"]),
+            activityType: json["activity_type"] as? String ?? json["type"] as? String ?? "other",
+            activityLabel: json["activity_label"] as? String ?? "",
+            emoji: json["emoji"] as? String ?? "✨",
+            title: json["title"] as? String ?? json["host"] as? String ?? "",
+            host: json["host"] as? String ?? "",
+            ilce: json["ilce"] as? String ?? "",
+            venue: json["venue"] as? String ?? "",
+            timeLabel: json["time_label"] as? String ?? "",
+            note: json["note"] as? String ?? "",
+            pointsMin: JSONValue.int(json["points_min"]),
+            slotsNeeded: JSONValue.int(json["slots_needed"], default: 1),
+            spotsLeft: JSONValue.int(json["spots_left"], default: 1),
+            joined: json["joined"] as? Bool ?? false,
+            pending: json["pending"] as? Bool ?? false,
+            isMine: json["is_mine"] as? Bool ?? false,
+            contactHint: json["contact_hint"] as? String ?? ""
         )
     }
 }
 
 enum JSONValue {
-    static func int(_ value: Any?) -> Int {
+    static func int(_ value: Any?, default defaultValue: Int = 0) -> Int {
         if let v = value as? Int { return v }
         if let v = value as? NSNumber { return v.intValue }
         if let s = value as? String, let v = Int(s) { return v }
-        return 0
+        return defaultValue
     }
-
     static func double(_ value: Any?) -> Double? {
         if let v = value as? Double { return v }
         if let v = value as? NSNumber { return v.doubleValue }
@@ -121,6 +175,16 @@ enum JSONValue {
     }
 }
 
-enum MobileEndpoint: String, Sendable {
-    case vets, dentists, doctors, hospitals, hotels
+enum MobileEndpoint: String, Sendable { case vets, dentists, doctors, hospitals, hotels }
+
+enum AppNavRoute: Hashable {
+    case menu(MenuLink)
+    case place(String)
+    case news(String)
+    case pharmacy(String)
+    case settings
+    case createEvent
+    case search(String)
+    case okey
+    case category(String, String)
 }

@@ -4,13 +4,24 @@ struct FeedView: View {
     @EnvironmentObject private var auth: AuthStore
     @StateObject private var vm = FeedViewModel()
     @State private var showAuth = false
+    var onSearchTap: (() -> Void)?
+    var onChipTap: ((String, String) -> Void)?
+
+    private let chips: [(String, String)] = [
+        ("all", "Tümü"), ("event", "Etkinlik"), ("food", "Lezzet"), ("visit", "Gezi"),
+    ]
+    @State private var chip = "all"
 
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
                 searchBar
+                FilterChips(items: chips, selected: chip, onSelect: onChip)
                 if let hero = vm.heroEvent {
-                    HeroEventCard(event: hero)
+                    NavigationLink(value: hero.slug) {
+                        HeroEventCard(event: hero)
+                    }
+                    .buttonStyle(.plain)
                     sectionTitle("Topluluk akışı")
                 }
                 if vm.isLoading && vm.rows.isEmpty {
@@ -29,7 +40,14 @@ struct FeedView: View {
                                 }
                             }
                         case .event(let event):
-                            EventStripCard(event: event)
+                            if event.slug.isEmpty {
+                                EventStripCard(event: event)
+                            } else {
+                                NavigationLink(value: event.slug) {
+                                    EventStripCard(event: event)
+                                }
+                                .buttonStyle(.plain)
+                            }
                         }
                     }
                 }
@@ -67,22 +85,47 @@ struct FeedView: View {
         }
     }
 
-    private var searchBar: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(AppColors.muted)
-            Text("Mekan, etkinlik, mahalle…")
-                .foregroundStyle(AppColors.muted)
-                .fontWeight(.semibold)
-            Spacer()
+    private func onChip(_ value: String) {
+        chip = value
+        if value == "all" {
+            vm.load(auth: auth, refresh: true)
+            return
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .background(
-            RoundedRectangle(cornerRadius: AppRadii.lg, style: .continuous)
-                .fill(AppColors.card)
-                .shadow(color: AppColors.ink.opacity(0.06), radius: 18, y: 8)
-        )
+        let title: String
+        let category: String
+        switch value {
+        case "event":
+            title = "Etkinlikler"
+            category = "event"
+        case "food":
+            title = "Lezzet"
+            category = "food"
+        default:
+            title = "Gezilecek"
+            category = "visit"
+        }
+        onChipTap?(title, category)
+    }
+
+    private var searchBar: some View {
+        Button(action: { onSearchTap?() }) {
+            HStack(spacing: 10) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(AppColors.muted)
+                Text("Mekan, etkinlik, mahalle…")
+                    .foregroundStyle(AppColors.muted)
+                    .fontWeight(.semibold)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: AppRadii.lg, style: .continuous)
+                    .fill(AppColors.card)
+                    .shadow(color: AppColors.ink.opacity(0.06), radius: 18, y: 8)
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     private func sectionTitle(_ text: String) -> some View {

@@ -6,6 +6,10 @@ struct PlaceDetailView: View {
     @State private var place: [String: Any]?
     @State private var loading = true
     @State private var error: String?
+    @State private var isFav = false
+    @State private var favCount = 0
+    @State private var favBusy = false
+    @State private var showAuth = false
 
     var body: some View {
         AppPage(title: place?["title"] as? String ?? "Detay") {
@@ -31,10 +35,20 @@ struct PlaceDetailView: View {
                         if let body = place["body"] as? String, !body.isEmpty {
                             Text(body).font(.subheadline).foregroundStyle(AppColors.muted)
                         }
-                        if let url = webURL(for: place) {
-                            Link("Web'de aç", destination: url)
-                                .font(.headline)
-                                .foregroundStyle(AppColors.accentDeep)
+                        HStack {
+                            Button {
+                                Task { await toggleFavorite() }
+                            } label: {
+                                Label("\(favCount)", systemImage: isFav ? "heart.fill" : "heart")
+                                    .foregroundStyle(isFav ? AppColors.coral : AppColors.muted)
+                            }
+                            .disabled(favBusy)
+                            Spacer()
+                            if let url = webURL(for: place) {
+                                Link("Web'de aç", destination: url)
+                                    .font(.headline)
+                                    .foregroundStyle(AppColors.accentDeep)
+                            }
                         }
                     }
                     .padding(16)
@@ -43,6 +57,7 @@ struct PlaceDetailView: View {
             .refreshable { await load() }
         }
         .task { await load() }
+        .sheet(isPresented: $showAuth) { AuthFlowView() }
     }
 
     private func webURL(for place: [String: Any]) -> URL? {
@@ -58,7 +73,24 @@ struct PlaceDetailView: View {
         error = nil
         defer { loading = false }
         do {
-            place = try await auth.apiClient().placeDetail(slug: slug)
+            let p = try await auth.apiClient().placeDetail(slug: slug)
+            place = p
+            isFav = p["is_fav"] as? Bool ?? false
+            favCount = JSONValue.int(p["fav_count"])
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
+    @MainActor
+    private func toggleFavorite() async {
+        guard auth.isLoggedIn else { showAuth = true; return }
+        favBusy = true
+        defer { favBusy = false }
+        do {
+            let (fav, count) = try await auth.apiClient().togglePlaceFavorite(slug: slug)
+            isFav = fav
+            favCount = count
         } catch {
             self.error = error.localizedDescription
         }

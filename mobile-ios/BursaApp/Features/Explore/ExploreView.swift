@@ -33,6 +33,10 @@ struct ExploreView: View {
     @State private var filter = ""
     @State private var loading = true
     @State private var path = NavigationPath()
+    @State private var selectedPlace: PlaceItem?
+    @State private var routePoints: [CLLocationCoordinate2D] = []
+    @State private var routeLoading = false
+    @State private var routeInfo: String?
     @State private var camera: MapCameraPosition = .region(
         MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: 40.1885, longitude: 29.0610),
@@ -48,13 +52,18 @@ struct ExploreView: View {
         NavigationStack(path: $path) {
             VStack(spacing: 0) {
                 Map(position: $camera) {
+                    if routePoints.count >= 2 {
+                        MapPolyline(coordinates: routePoints)
+                            .stroke(AppColors.accentDeep, lineWidth: 4)
+                    }
                     ForEach(filtered) { place in
                         if let lat = place.lat, let lng = place.lng {
                             Annotation(place.title, coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng)) {
                                 Button {
-                                    path.append(place.detailSlug)
+                                    selectedPlace = place
+                                    Task { await drawRoute(to: place) }
                                 } label: {
-                                    Image(systemName: "mappin.circle.fill")
+                                    Image(systemName: selectedPlace?.id == place.id ? "mappin.and.ellipse" : "mappin.circle.fill")
                                         .font(.title2)
                                         .foregroundStyle(AppColors.coral)
                                 }
@@ -65,20 +74,16 @@ struct ExploreView: View {
                 .frame(height: 280)
                 .clipShape(RoundedRectangle(cornerRadius: AppRadii.md))
 
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(filters, id: \.0) { key, label in
-                            Button(label) { filter = key }
-                                .font(.caption.weight(.semibold))
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 6)
-                                .background(filter == key ? AppColors.nav : AppColors.card)
-                                .foregroundStyle(filter == key ? AppColors.lime : AppColors.ink)
-                                .clipShape(Capsule())
-                        }
-                    }
-                    .padding(.vertical, 10)
+                if let routeInfo, !routeInfo.isEmpty {
+                    Text("Rota · \(routeInfo)")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(AppColors.accentDeep)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 8)
                 }
+
+                FilterChips(items: filters, selected: filter) { filter = $0 }
+                    .padding(.vertical, 10)
 
                 if loading {
                     ProgressView().padding()
@@ -100,6 +105,33 @@ struct ExploreView: View {
                 Task { await load() }
             }
             .navigationDestination(for: String.self) { slug in PlaceDetailView(slug: slug) }
+            .sheet(item: $selectedPlace) { place in
+                exploreSheet(place)
+            }
+        }
+    }
+
+    private func exploreSheet(_ place: PlaceItem) -> some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(place.title).font(.title3.bold())
+                if !place.ilce.isEmpty { Text(place.ilce).foregroundStyle(AppColors.accentDeep) }
+                if !place.blurb.isEmpty { Text(place.blurb).font(.subheadline).foregroundStyle(AppColors.muted) }
+                HStack {
+                    Button(routeLoading ? "Rota…" : "Rota çiz") {
+                        Task { await drawRoute(to: place) }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(AppColors.nav)
+                    .disabled(routeLoading)
+                    Button("Detay") { path.append(place.detailSlug); selectedPlace = nil }
+                        .buttonStyle(.bordered)
+                }
+                Spacer()
+            }
+            .padding(16)
+            .presentationDetents([.medium])
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Kapat") { selectedPlace = nil } } }
         }
     }
 
@@ -120,5 +152,42 @@ struct ExploreView: View {
         } catch {
             places = []
         }
+    }
+
+    @MainActor
+    private func drawRoute(to place: PlaceItem) async {
+        guard let lat = place.lat, let lng = place.lng else { return }
+        routeLoading = true
+        defer { routeLoading = false }
+        do {
+            let route = try await auth.apiClient().mapRoute(
+                fromLat: location.center.latitude,
+                fromLng: location.center.longitude,
+                toLat: lat,
+                toLng: lng
+            )
+            routePoints = route.points
+            if let d = route.distanceM, let s = route.durationS {
+                routeInfo = "\(formatDist(d)) · \(formatDur(s))"
+            } else {
+                routeInfo = "Haritada"
+            }
+            camera = .region(MKCoordinateRegion(
+                center: CLLocationCoordinate2D(latitude: (location.center.latitude + lat) / 2, longitude: (location.center.longitude + lng) / 2),
+                span: MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04)
+            ))
+        } catch {
+            routePoints = [location.center, CLLocationCoordinate2D(latitude: lat, longitude: lng)]
+            routeInfo = "Kuş uçuşu"
+        }
+    }
+
+    private func formatDist(_ m: Double) -> String {
+        m >= 1000 ? String(format: "%.1f km", m / 1000) : "\(Int(m)) m"
+    }
+
+    private func formatDur(_ s: Double) -> String {
+        let mins = Int(s / 60)
+        return mins >= 60 ? "\(mins / 60) sa \(mins % 60) dk" : "\(mins) dk"
     }
 }

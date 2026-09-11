@@ -80,6 +80,29 @@ final class AuthStore: ObservableObject {
         }
     }
 
+    func updateProfile(name: String, showFullName: Bool) async throws {
+        loading = true
+        defer { loading = false }
+        user = try await api.updateMe(action: "profile", name: name, showFullName: showFullName)
+    }
+
+    func updatePassword(current: String, newPassword: String, newPassword2: String) async throws {
+        loading = true
+        defer { loading = false }
+        user = try await api.updateMe(
+            action: "password",
+            currentPassword: current,
+            newPassword: newPassword,
+            newPassword2: newPassword2
+        )
+    }
+
+    func uploadAvatar(_ data: Data, filename: String) async throws {
+        loading = true
+        defer { loading = false }
+        user = try await api.uploadAvatar(data: data, filename: filename)
+    }
+
     private func clearSession() async {
         token = nil
         user = nil

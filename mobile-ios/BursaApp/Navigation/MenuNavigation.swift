@@ -27,6 +27,15 @@ struct MenuDestinationView: View {
 
     var body: some View {
         destination
+            .navigationDestination(for: String.self) { slug in
+                if slug.hasPrefix("news:") {
+                    NewsDetailView(slug: String(slug.dropFirst(5)))
+                } else if slug.hasPrefix("pharmacy:") {
+                    PharmacyDetailView(slug: String(slug.dropFirst(9)))
+                } else {
+                    PlaceDetailView(slug: slug)
+                }
+            }
     }
 
     @ViewBuilder
@@ -57,33 +66,37 @@ struct MenuDestinationView: View {
         case "/hastaneler":
             MobilePlacesView(endpoint: .hospitals, title: "Hastaneler")
         case "/rota":
-            SimpleInfoView(title: "Rota planlayıcı", message: "Harita sekmesinden yakındaki mekanlara rota çizebilirsin.")
+            RoutePlannerView()
         case "/arkadas-ara":
             ActivityBuddyView()
+        case "/okey", "/okey-ara":
+            OkeyView()
         case "/liderler":
             LeadersView()
         case "/eglence":
             CategoryPlacesView(title: "Eğlence", category: "fun")
+        case "/etkinlikler":
+            CategoryPlacesView(title: "Etkinlikler", category: "event")
+        case "/yeme-icme-list":
+            CategoryPlacesView(title: "Yeme-içme", category: "food")
         default:
             if let cat = link.category, !cat.isEmpty {
                 CategoryPlacesView(title: link.label, category: cat)
+            } else if !link.path.isEmpty, link.path != "/" {
+                CategoryPlacesView(title: link.label, category: pathToCategory(link.path))
             } else {
-                SimpleInfoView(title: link.label, message: "Bu bölüm yakında.")
+                RoutePlannerView()
             }
         }
     }
-}
 
-struct SimpleInfoView: View {
-    let title: String
-    let message: String
-
-    var body: some View {
-        AppPage(title: title) {
-            Text(message)
-                .foregroundStyle(AppColors.muted)
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .leading)
+    private func pathToCategory(_ path: String) -> String {
+        switch path {
+        case "/konaklama": return "hotel"
+        case "/spor": return "sport"
+        case "/dugun": return "wedding"
+        case "/gece-hayati": return "nightlife"
+        default: return "visit"
         }
     }
 }
