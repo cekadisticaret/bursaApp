@@ -11,7 +11,13 @@ import '../widgets/app_page.dart';
 
 Future<void> openPlaceDetail(BuildContext context, String slug) async {
   final s = slug.trim();
-  if (s.isEmpty) return;
+  if (s.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Detay bulunamadı')),
+    );
+    return;
+  }
+  if (!context.mounted) return;
   await Navigator.of(context).push(appRoute(PlaceDetailScreen(slug: s)));
 }
 
