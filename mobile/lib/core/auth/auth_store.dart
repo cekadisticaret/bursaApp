@@ -22,7 +22,6 @@ class AuthStore extends ChangeNotifier {
 
   BursaApi get api {
     _api ??= BursaApi(token: token);
-    _api!.token = token;
     return _api!;
   }
 
@@ -75,8 +74,9 @@ class AuthStore extends ChangeNotifier {
     try {
       final trimmed = email.trim();
       _bindApi();
-      final u = await api.login(trimmed, password);
-      token = api.token;
+      final client = _api!;
+      final u = await client.login(trimmed, password);
+      token = client.token;
       if (token == null || token!.isEmpty) {
         throw ApiException('Oturum oluşturulamadı', 500);
       }
@@ -96,8 +96,9 @@ class AuthStore extends ChangeNotifier {
     try {
       final trimmed = email.trim();
       _bindApi();
-      final u = await api.register(name.trim(), trimmed, password);
-      token = api.token;
+      final client = _api!;
+      final u = await client.register(name.trim(), trimmed, password);
+      token = client.token;
       if (token == null || token!.isEmpty) {
         throw ApiException('Hesap oluşturuldu ama oturum açılamadı', 500);
       }
