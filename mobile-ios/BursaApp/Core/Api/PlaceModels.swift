@@ -175,6 +175,14 @@ enum JSONValue {
         if let s = value as? String { return Double(s) }
         return nil
     }
+
+    static func string(_ value: Any?, default defaultValue: String = "") -> String {
+        if let v = value as? String { return v }
+        if let v = value as? Int { return String(v) }
+        if let v = value as? NSNumber { return v.stringValue }
+        if let v = value as? Double { return String(v) }
+        return defaultValue
+    }
 }
 
 enum MobileEndpoint: String, Sendable { case vets, dentists, doctors, hospitals, hotels }

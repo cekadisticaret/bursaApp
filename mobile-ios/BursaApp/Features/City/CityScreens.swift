@@ -1088,13 +1088,13 @@ private func standingsSection(_ standings: [[String: Any]], league: String) -> s
                     let team = r["team"] as? String ?? ""
                     let isBs = team.contains("Bursaspor")
                     HStack {
-                        Text("\(r["pos"] ?? "")").frame(width: 24)
+                        Text(JSONValue.string(r["pos"])).frame(width: 24)
                         Text(team).frame(width: 120, alignment: .leading).lineLimit(1)
-                        Text("\(r["p"] ?? "")").frame(width: 24)
-                        Text("\(r["w"] ?? "")").frame(width: 24)
-                        Text("\(r["d"] ?? "")").frame(width: 24)
-                        Text("\(r["l"] ?? "")").frame(width: 24)
-                        Text("\(r["pts"] ?? "")").frame(width: 24)
+                        Text(JSONValue.string(r["p"])).frame(width: 24)
+                        Text(JSONValue.string(r["w"])).frame(width: 24)
+                        Text(JSONValue.string(r["d"])).frame(width: 24)
+                        Text(JSONValue.string(r["l"])).frame(width: 24)
+                        Text(JSONValue.string(r["pts"])).frame(width: 24)
                     }
                     .font(.caption2.weight(isBs ? .black : .regular))
                     .foregroundStyle(isBs ? AppColors.accentDeep : AppColors.ink)
@@ -1121,7 +1121,7 @@ private func fixCard(_ match: [String: Any], upcoming: Bool) -> some View {
                 .foregroundStyle(AppColors.muted)
             Spacer()
             if !upcoming, match["home_score"] != nil {
-                Text("\(match["home_score"] ?? "")–\(match["away_score"] ?? "")").font(.caption.weight(.black))
+                Text("\(JSONValue.string(match["home_score"]))–\(JSONValue.string(match["away_score"]))").font(.caption.weight(.black))
             }
         }
         Text("\(home) vs \(away)").font(.subheadline.weight(.heavy))
@@ -1141,7 +1141,7 @@ private func fixRow(_ match: [String: Any]) -> some View {
     let away = match["away_team"] as? String ?? ""
     let week = match["week"]
     let played = match["played"] as? Bool == true
-    let score = played ? "\(match["home_score"] ?? "")–\(match["away_score"] ?? "")" : "vs"
+    let score = played ? "\(JSONValue.string(match["home_score"]))–\(JSONValue.string(match["away_score"]))" : "vs"
     return HStack {
         Text("\(week ?? "—")").frame(width: 28).font(.caption2).foregroundStyle(AppColors.muted)
         Text("\(home) \(score) \(away)").font(.caption2)
@@ -1170,7 +1170,7 @@ private func priceCard(_ price: [String: Any]) -> some View {
             if let note = price["note"] as? String { Text(note).font(.caption2).foregroundStyle(AppColors.muted) }
         }
         Spacer()
-        Text("\(price["amount_tl"] ?? price["amount"] ?? "") TL").font(.headline.weight(.black))
+        Text("\(JSONValue.string(price["amount_tl"], default: JSONValue.string(price["amount"]))) TL").font(.headline.weight(.black))
     }
     .padding(12)
     .background(RoundedRectangle(cornerRadius: AppRadii.sm).fill(AppColors.bgSoft))

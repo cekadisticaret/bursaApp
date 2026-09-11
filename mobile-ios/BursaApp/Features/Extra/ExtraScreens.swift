@@ -462,14 +462,6 @@ struct OkeyView: View {
 
 // MARK: - Profile Settings
 
-private struct AvatarPickerButtonLabel: View {
-    let uploading: Bool
-
-    var body: some View {
-        Text(uploading ? "Yükleniyor…" : "Galeriden seç")
-    }
-}
-
 struct ProfileSettingsView: View {
     @EnvironmentObject private var auth: AuthStore
     @State private var name = ""
@@ -492,9 +484,12 @@ struct ProfileSettingsView: View {
                             .frame(width: 64, height: 64)
                             .clipShape(Circle())
                         PhotosPicker(selection: $photoItem, matching: .images) {
-                            AvatarPickerButtonLabel(uploading: uploading)
+                            Text("Galeriden seç")
                         }
                         .disabled(uploading)
+                        if uploading {
+                            ProgressView().scaleEffect(0.85)
+                        }
                     }
                 }
                 Section("Bilgiler") {
