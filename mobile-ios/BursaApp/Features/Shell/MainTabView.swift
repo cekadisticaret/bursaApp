@@ -25,6 +25,7 @@ enum ShellTab: Int, CaseIterable {
 struct MainTabView: View {
     @EnvironmentObject private var auth: AuthStore
     @State private var tab: ShellTab = .feed
+    @State private var profilePath = NavigationPath()
     @State private var showAuth = false
 
     var body: some View {
@@ -40,7 +41,7 @@ struct MainTabView: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 8)
 
-                TabContent(tab: tab)
+                TabContent(tab: tab, profilePath: $profilePath, tabSelection: $tab)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .safeAreaInset(edge: .bottom) {
@@ -51,7 +52,7 @@ struct MainTabView: View {
                 selection: $tab,
                 onCreateTap: {
                     if auth.isLoggedIn {
-                        // Faz 2: etkinlik oluştur
+                        // TODO: CreateEventView
                     } else {
                         showAuth = true
                     }
@@ -66,17 +67,27 @@ struct MainTabView: View {
 
 private struct TabContent: View {
     let tab: ShellTab
+    @Binding var profilePath: NavigationPath
+    @Binding var tabSelection: ShellTab
 
     var body: some View {
         switch tab {
         case .feed:
             FeedView()
         case .explore:
-            PlaceholderTabView(title: "Keşfet", subtitle: "Harita ve rota — Faz 2")
+            ExploreView()
         case .food:
-            PlaceholderTabView(title: "Lezzet", subtitle: "Yeme-içme listesi — Faz 3")
+            FoodView()
         case .profile:
-            ProfileView()
+            NavigationStack(path: $profilePath) {
+                ProfileView(tabSelection: $tabSelection, navPath: $profilePath)
+                    .navigationDestination(for: MenuDestination.self) { dest in
+                        MenuDestinationView(link: dest.link)
+                    }
+                    .navigationDestination(for: String.self) { slug in
+                        PlaceDetailView(slug: slug)
+                    }
+            }
         }
     }
 }

@@ -71,6 +71,15 @@ final class AuthStore: ObservableObject {
         await clearSession()
     }
 
+    func refreshUser() async {
+        guard isLoggedIn else { return }
+        do {
+            user = try await api.me()
+        } catch {
+            // ignore transient errors
+        }
+    }
+
     private func clearSession() async {
         token = nil
         user = nil

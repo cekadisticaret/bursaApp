@@ -6,7 +6,7 @@ struct RemoteImage: View {
 
     var body: some View {
         Group {
-            if let u = URL(string: url), !url.isEmpty {
+            if let u = resolvedURL {
                 AsyncImage(url: u) { phase in
                     switch phase {
                     case .success(let image):
