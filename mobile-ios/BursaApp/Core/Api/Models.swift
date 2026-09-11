@@ -87,7 +87,7 @@ struct LikeResult: Sendable {
 }
 
 enum JSONFlex {
-    static func int(_ c: KeyedDecodingContainer<some CodingKey>, _ key: some CodingKey) -> Int {
+    static func int<K: CodingKey>(_ c: KeyedDecodingContainer<K>, _ key: K) -> Int {
         if let v = try? c.decode(Int.self, forKey: key) { return v }
         if let v = try? c.decode(Double.self, forKey: key) { return Int(v) }
         if let s = try? c.decode(String.self, forKey: key), let v = Int(s) { return v }
