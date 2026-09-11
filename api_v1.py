@@ -8,8 +8,10 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request
 
 from auth import admin_required, hash_password, load_user, login_required, login_user, make_token, rate_ok, verify_password
+from bursaspor_pages import build_bursaspor_payload
 from catalog import CAT_KEYS, CATEGORIES, MEKAN_TAXONOMY, parse_dt, place_mine, place_public, query_places, tags_dump, unique_slug
 from discover import FALLBACK_LAT, FALLBACK_LNG, nearby, today_bursa, tonight, weekend, weekend_plan
+from news_mobile import build_news_detail, build_news_hub
 from models import Place, Review, SessionLocal, User, clamp_score, recompute_place_rating, review_dimension_avgs
 
 bp = Blueprint("api_v1", __name__, url_prefix="/api/v1")
@@ -973,47 +975,63 @@ def okey_seeking():
 
 @bp.route("/mobile/nobetci-eczaneler")
 def mobile_nobetci():
-    data = _mobile_data_json("nobetci_eczaneler.json")
-    if not data:
-        return jsonify({"ok": False, "pharmacies": [], "total": 0})
-    return jsonify(data)
+    from pharmacy_mobile import build_pharmacy_payload
+
+    lat = lng = None
+    try:
+        if request.args.get("lat") not in (None, ""):
+            lat = float(request.args.get("lat"))
+        if request.args.get("lng") not in (None, ""):
+            lng = float(request.args.get("lng"))
+    except (TypeError, ValueError):
+        lat = lng = None
+    payload = build_pharmacy_payload(
+        ilce=request.args.get("ilce") or "",
+        lat=lat,
+        lng=lng,
+    )
+    return jsonify(payload)
+
+
+@bp.route("/mobile/nobetci-eczaneler/<slug>")
+def mobile_nobetci_detail(slug):
+    from pharmacy_mobile import build_pharmacy_detail
+
+    return jsonify(build_pharmacy_detail(slug))
 
 
 @bp.route("/mobile/news")
 def mobile_news():
-    data = _mobile_data_json("bursa_news.json")
-    articles = data.get("articles") or []
-    slim = [
-        {
-            "id": a.get("id"),
-            "title": a.get("title"),
-            "blurb": a.get("blurb"),
-            "published_at": a.get("published_at"),
-            "source": a.get("source"),
-            "img_url": a.get("img_url"),
-        }
-        for a in articles[:40]
-        if isinstance(a, dict)
-    ]
-    return jsonify({"ok": True, "generated_at": data.get("generated_at"), "articles": slim})
+    topic = (request.args.get("konu") or request.args.get("topic") or "").strip()
+    q = (request.args.get("q") or "").strip()
+    try:
+        page = max(1, int(request.args.get("page") or 1))
+    except ValueError:
+        page = 1
+    try:
+        per_page = max(1, min(int(request.args.get("limit") or 24), 48))
+    except ValueError:
+        per_page = 24
+    payload = build_news_hub(topic=topic, q=q, page=page, per_page=per_page)
+    return jsonify({"ok": True, **payload})
+
+
+@bp.route("/mobile/news/<slug>")
+def mobile_news_detail(slug: str):
+    payload = build_news_detail(slug)
+    if not payload:
+        return jsonify({"ok": False, "error": "not_found"}), 404
+    return jsonify({"ok": True, "article": payload})
 
 
 @bp.route("/mobile/bursaspor")
 def mobile_bursaspor():
-    data = _mobile_data_json("bursaspor_feed.json")
-    news = data.get("news") or []
-    slim = [
-        {
-            "title": n.get("title"),
-            "blurb": n.get("blurb"),
-            "published_at": n.get("published_at"),
-            "source": n.get("source"),
-            "img_url": n.get("img_url"),
-        }
-        for n in news[:30]
-        if isinstance(n, dict)
-    ]
-    return jsonify({"ok": True, "desk": data.get("desk") or {}, "news": slim})
+    db = SessionLocal()
+    try:
+        payload = build_bursaspor_payload(db)
+        return jsonify({"ok": True, **payload})
+    finally:
+        db.close()
 
 
 @bp.route("/mobile/teleferik")
@@ -1028,3 +1046,125 @@ def mobile_teleferik():
 def mobile_utilities():
     data = _mobile_data_json("utilities.json")
     return jsonify({"ok": True, "utilities": data if data else {}})
+
+
+@bp.route("/mobile/hotels")
+def mobile_hotels():
+    from hotels_mobile import build_hotels_payload
+
+    db = SessionLocal()
+    try:
+        payload = build_hotels_payload(
+            db,
+            q=request.args.get("q") or "",
+            ilce=request.args.get("ilce") or "",
+            sub=request.args.get("sub") or "",
+            band=request.args.get("band") or "",
+            sort=request.args.get("sort") or "rating",
+            price_filter=request.args.get("price") or "",
+        )
+        return jsonify({"ok": True, **payload})
+    finally:
+        db.close()
+
+
+@bp.route("/mobile/visit")
+def mobile_visit():
+    from visit_mobile import build_visit_payload
+
+    try:
+        page = max(1, int(request.args.get("page") or 1))
+    except ValueError:
+        page = 1
+    db = SessionLocal()
+    try:
+        payload = build_visit_payload(
+            db,
+            q=request.args.get("q") or "",
+            ilce=request.args.get("ilce") or "",
+            sub=request.args.get("sub") or "",
+            sort=request.args.get("sort") or "featured",
+            kinds=request.args.getlist("kind"),
+            fees=request.args.getlist("fee"),
+            tags=request.args.getlist("tag"),
+            page=page,
+        )
+        return jsonify({"ok": True, **payload})
+    finally:
+        db.close()
+
+
+@bp.route("/mobile/vets")
+def mobile_vets():
+    from vets_mobile import build_vets_payload
+
+    tab = (request.args.get("tab") or "hepsi").strip().lower()
+    lat = lng = None
+    try:
+        if request.args.get("lat") not in (None, ""):
+            lat = float(request.args.get("lat"))
+        if request.args.get("lng") not in (None, ""):
+            lng = float(request.args.get("lng"))
+    except (TypeError, ValueError):
+        lat = lng = None
+    db = SessionLocal()
+    try:
+        payload = build_vets_payload(
+            db,
+            tab=tab,
+            ilce=request.args.get("ilce") or "",
+            sub=request.args.get("sub") or "",
+            lat=lat,
+            lng=lng,
+        )
+        return jsonify({"ok": True, **payload})
+    finally:
+        db.close()
+
+
+@bp.route("/mobile/dentists")
+def mobile_dentists():
+    from dentists_mobile import build_dentists_payload
+
+    db = SessionLocal()
+    try:
+        payload = build_dentists_payload(
+            db,
+            ilce=request.args.get("ilce") or "",
+            band=request.args.get("band") or "",
+        )
+        return jsonify({"ok": True, **payload})
+    finally:
+        db.close()
+
+
+@bp.route("/mobile/doctors")
+def mobile_doctors():
+    from doctors_mobile import build_doctors_payload
+
+    db = SessionLocal()
+    try:
+        payload = build_doctors_payload(
+            db,
+            ilce=request.args.get("ilce") or "",
+            spec=request.args.get("spec") or "",
+        )
+        return jsonify({"ok": True, **payload})
+    finally:
+        db.close()
+
+
+@bp.route("/mobile/hospitals")
+def mobile_hospitals():
+    from hospitals_mobile import build_hospitals_payload
+
+    db = SessionLocal()
+    try:
+        payload = build_hospitals_payload(
+            db,
+            ilce=request.args.get("ilce") or "",
+            band=request.args.get("band") or "",
+        )
+        return jsonify({"ok": True, **payload})
+    finally:
+        db.close()

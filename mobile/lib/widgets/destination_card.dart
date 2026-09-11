@@ -67,88 +67,98 @@ class _DestinationCardState extends State<DestinationCard> {
       tap();
       return;
     }
-    if (widget.place.slug.isNotEmpty) {
-      openPlaceDetail(context, widget.place.slug);
+    if (widget.place.detailSlug.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Detay bulunamadı')),
+      );
+      return;
     }
+    openPlaceDetail(context, widget.place.detailSlug);
   }
 
   @override
   Widget build(BuildContext context) {
     final img = widget.place.imgUrl;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: _openDetail,
-      child: Container(
-        height: 190,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadii.lg),
-          boxShadow: AppShadows.card,
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (img.isNotEmpty)
-              CachedNetworkImage(
-                imageUrl: img.startsWith('http') ? img : '${AppConfig.siteBase}$img',
-                fit: BoxFit.cover,
-              )
-            else
-              Container(color: AppColors.bgSoft),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, AppColors.ink.withValues(alpha: 0.8)],
-                ),
-              ),
-            ),
-            Positioned(
-              top: 12,
-              right: 12,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: _favBusy ? null : _toggleFavorite,
-                child: Container(
-                  width: 36,
-                  height: 36,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _openDetail,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        child: Ink(
+          height: 190,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            boxShadow: AppShadows.card,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (img.isNotEmpty)
+                  CachedNetworkImage(
+                    imageUrl: img.startsWith('http') ? img : '${AppConfig.siteBase}$img',
+                    fit: BoxFit.cover,
+                  )
+                else
+                  Container(color: AppColors.bgSoft),
+                Container(
                   decoration: BoxDecoration(
-                    color: AppColors.card.withValues(alpha: 0.9),
-                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.transparent, AppColors.ink.withValues(alpha: 0.8)],
+                    ),
                   ),
-                  child: _favBusy
-                      ? const Padding(
-                          padding: EdgeInsets.all(8),
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Icon(
-                          _isFav ? Icons.favorite : Icons.favorite_border,
-                          size: 18,
-                          color: _isFav ? AppColors.coral : AppColors.ink,
-                        ),
                 ),
-              ),
-            ),
-            Positioned(
-              left: 16,
-              right: 16,
-              bottom: 14,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(widget.place.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18)),
-                  Row(
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Material(
+                    color: AppColors.card.withValues(alpha: 0.92),
+                    shape: const CircleBorder(),
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      onTap: _favBusy ? null : _toggleFavorite,
+                      customBorder: const CircleBorder(),
+                      child: SizedBox(
+                        width: 36,
+                        height: 36,
+                        child: _favBusy
+                            ? const Padding(
+                                padding: EdgeInsets.all(8),
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : Icon(
+                                _isFav ? Icons.favorite : Icons.favorite_border,
+                                size: 18,
+                                color: _isFav ? AppColors.coral : AppColors.ink,
+                              ),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 16,
+                  right: 16,
+                  bottom: 14,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.place, color: AppColors.lime, size: 14),
-                      const SizedBox(width: 4),
-                      Text(widget.place.ilce, style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 12)),
+                      Text(widget.place.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18)),
+                      Row(
+                        children: [
+                          const Icon(Icons.place, color: AppColors.lime, size: 14),
+                          const SizedBox(width: 4),
+                          Text(widget.place.ilce, style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 12)),
+                        ],
+                      ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

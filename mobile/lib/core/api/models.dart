@@ -168,6 +168,7 @@ class PlaceItem {
     this.when = '',
     this.venueName = '',
     this.categoryLabel = '',
+    this.jPath = '',
   });
 
   final String title;
@@ -184,9 +185,32 @@ class PlaceItem {
   final String venueName;
   final String categoryLabel;
 
-  factory PlaceItem.fromJson(Map<String, dynamic> j) => PlaceItem(
+  /// Detay sayfası slug'ı — API `slug` yoksa `path` (/bursa-xxx) yedeği.
+  String get detailSlug {
+    final s = slug.trim();
+    if (s.isNotEmpty) return s;
+    return _slugFromPath(jPath);
+  }
+
+  /// Ham JSON'dan okunmaz; yalnızca fromJson içinde set edilir.
+  final String jPath;
+
+  static String _slugFromPath(String path) {
+    final p = path.trim();
+    if (p.isEmpty) return '';
+    final segment = p.split('/').where((s) => s.isNotEmpty).last;
+    if (segment.startsWith('bursa-')) return segment.substring(6);
+    return segment;
+  }
+
+  factory PlaceItem.fromJson(Map<String, dynamic> j) {
+    final path = j['path']?.toString() ?? '';
+    final slugRaw = (j['slug']?.toString() ?? '').trim();
+    final slug = slugRaw.isNotEmpty ? slugRaw : _slugFromPath(path);
+    return PlaceItem(
         title: j['title']?.toString() ?? '',
-        slug: j['slug']?.toString() ?? '',
+        slug: slug,
+        jPath: path,
         category: j['category']?.toString() ?? '',
         ilce: j['ilce']?.toString() ?? '',
         blurb: j['blurb']?.toString() ?? '',
@@ -199,6 +223,7 @@ class PlaceItem {
         venueName: j['venue_name']?.toString() ?? '',
         categoryLabel: j['category_label']?.toString() ?? '',
       );
+  }
 }
 
 class MenuGroup {

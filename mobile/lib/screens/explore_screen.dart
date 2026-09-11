@@ -531,7 +531,7 @@ class _PlaceSheet extends StatelessWidget {
         children: [
           GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: place.slug.isNotEmpty ? () => openPlaceDetail(context, place.slug) : null,
+            onTap: place.detailSlug.isNotEmpty ? () => openPlaceDetail(context, place.detailSlug) : null,
             child: Row(
               children: [
                 ClipRRect(

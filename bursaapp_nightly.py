@@ -315,6 +315,17 @@ def main() -> int:
             summary["reject"] += int(s.get("dup") or 0)
         if err:
             summary["errors"].append(f"repair: {err}")
+
+        def _food_geocode():
+            from food_coverage import geocode_missing
+
+            return geocode_missing(limit=40, apply=True)
+
+        s, err = step("3b yeme-içme geocode (Nominatim)", _food_geocode)
+        if s:
+            summary["food_geocode"] = s
+        if err:
+            summary["errors"].append(f"food_geocode: {err}")
     else:
         log("Onarım atlandı")
 

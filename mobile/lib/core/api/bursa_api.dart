@@ -304,14 +304,45 @@ class BursaApi {
     await _decode(res);
   }
 
-  Future<Map<String, dynamic>> nobetciEczaneler() async {
-    final uri = Uri.parse('${AppConfig.apiBase}/mobile/nobetci-eczaneler');
+  Future<Map<String, dynamic>> nobetciEczaneler({
+    String? ilce,
+    double? lat,
+    double? lng,
+  }) async {
+    final qp = <String, String>{
+      if (ilce != null && ilce.isNotEmpty) 'ilce': ilce,
+      if (lat != null) 'lat': '$lat',
+      if (lng != null) 'lng': '$lng',
+    };
+    final uri = Uri.parse('${AppConfig.apiBase}/mobile/nobetci-eczaneler').replace(queryParameters: qp);
     final res = await _client.get(uri, headers: _headers);
     return await _decode(res);
   }
 
-  Future<Map<String, dynamic>> bursaNews() async {
-    final uri = Uri.parse('${AppConfig.apiBase}/mobile/news');
+  Future<Map<String, dynamic>> nobetciEczaneDetail(String slug) async {
+    final s = slug.trim();
+    if (s.isEmpty) throw ApiException('Geçersiz slug', 400);
+    final uri = Uri.parse('${AppConfig.apiBase}/mobile/nobetci-eczaneler/').resolve(s);
+    final res = await _client.get(uri, headers: _headers);
+    return await _decode(res);
+  }
+
+  Future<Map<String, dynamic>> bursaNews({String? topic, String? q, int page = 1, int limit = 24}) async {
+    final qp = <String, String>{
+      'page': '$page',
+      'limit': '$limit',
+      if (topic != null && topic.isNotEmpty) 'konu': topic,
+      if (q != null && q.isNotEmpty) 'q': q,
+    };
+    final uri = Uri.parse('${AppConfig.apiBase}/mobile/news').replace(queryParameters: qp);
+    final res = await _client.get(uri, headers: _headers);
+    return await _decode(res);
+  }
+
+  Future<Map<String, dynamic>> bursaNewsDetail(String slug) async {
+    final s = slug.trim();
+    if (s.isEmpty) throw ApiException('Geçersiz slug', 400);
+    final uri = Uri.parse('${AppConfig.apiBase}/mobile/news/').resolve(s);
     final res = await _client.get(uri, headers: _headers);
     return await _decode(res);
   }
@@ -334,8 +365,138 @@ class BursaApi {
     return await _decode(res);
   }
 
+  Future<Map<String, dynamic>> hotels({
+    String? q,
+    String? ilce,
+    String? sub,
+    String? band,
+    String? sort,
+    String? price,
+  }) async {
+    final qp = <String, String>{
+      if (q != null && q.isNotEmpty) 'q': q,
+      if (ilce != null && ilce.isNotEmpty) 'ilce': ilce,
+      if (sub != null && sub.isNotEmpty) 'sub': sub,
+      if (band != null && band.isNotEmpty) 'band': band,
+      if (sort != null && sort.isNotEmpty) 'sort': sort,
+      if (price != null && price.isNotEmpty) 'price': price,
+    };
+    final uri = Uri.parse('${AppConfig.apiBase}/mobile/hotels').replace(queryParameters: qp);
+    final res = await _client.get(uri, headers: _headers);
+    return await _decode(res);
+  }
+
+  Future<Map<String, dynamic>> visitPlaces({
+    String? q,
+    String? ilce,
+    String? sort,
+    List<String>? kinds,
+    List<String>? fees,
+    List<String>? tags,
+    int page = 1,
+  }) async {
+    final qp = <String, String>{
+      'page': '$page',
+      if (q != null && q.isNotEmpty) 'q': q,
+      if (ilce != null && ilce.isNotEmpty) 'ilce': ilce,
+      if (sort != null && sort.isNotEmpty) 'sort': sort,
+    };
+    final uri = Uri.parse('${AppConfig.apiBase}/mobile/visit').replace(queryParameters: qp);
+    final base = uri.replace(queryParameters: {});
+    final parts = <String>[base.toString()];
+    final qPairs = <String>[];
+    qp.forEach((k, v) => qPairs.add('${Uri.encodeQueryComponent(k)}=${Uri.encodeQueryComponent(v)}'));
+    for (final k in kinds ?? []) {
+      if (k.isNotEmpty) qPairs.add('kind=${Uri.encodeQueryComponent(k)}');
+    }
+    for (final f in fees ?? []) {
+      if (f.isNotEmpty) qPairs.add('fee=${Uri.encodeQueryComponent(f)}');
+    }
+    for (final t in tags ?? []) {
+      if (t.isNotEmpty) qPairs.add('tag=${Uri.encodeQueryComponent(t)}');
+    }
+    final full = qPairs.isEmpty ? parts.first : '${parts.first}?${qPairs.join('&')}';
+    final res = await _client.get(Uri.parse(full), headers: _headers);
+    return await _decode(res);
+  }
+
+  Future<Map<String, dynamic>> vets({
+    String tab = 'hepsi',
+    String? ilce,
+    String? sub,
+    double? lat,
+    double? lng,
+  }) async {
+    final qp = <String, String>{
+      'tab': tab,
+      if (ilce != null && ilce.isNotEmpty) 'ilce': ilce,
+      if (sub != null && sub.isNotEmpty) 'sub': sub,
+      if (lat != null) 'lat': '$lat',
+      if (lng != null) 'lng': '$lng',
+    };
+    final uri = Uri.parse('${AppConfig.apiBase}/mobile/vets').replace(queryParameters: qp);
+    final res = await _client.get(uri, headers: _headers);
+    return await _decode(res);
+  }
+
+  Future<Map<String, dynamic>> dentists({
+    String? ilce,
+    String? band,
+  }) async {
+    final qp = <String, String>{
+      if (ilce != null && ilce.isNotEmpty) 'ilce': ilce,
+      if (band != null && band.isNotEmpty) 'band': band,
+    };
+    final uri = Uri.parse('${AppConfig.apiBase}/mobile/dentists').replace(queryParameters: qp);
+    final res = await _client.get(uri, headers: _headers);
+    return await _decode(res);
+  }
+
+  Future<Map<String, dynamic>> doctors({
+    String? ilce,
+    String? spec,
+  }) async {
+    final qp = <String, String>{
+      if (ilce != null && ilce.isNotEmpty) 'ilce': ilce,
+      if (spec != null && spec.isNotEmpty) 'spec': spec,
+    };
+    final uri = Uri.parse('${AppConfig.apiBase}/mobile/doctors').replace(queryParameters: qp);
+    final res = await _client.get(uri, headers: _headers);
+    return await _decode(res);
+  }
+
+  Future<Map<String, dynamic>> hospitals({
+    String? ilce,
+    String? band,
+  }) async {
+    final qp = <String, String>{
+      if (ilce != null && ilce.isNotEmpty) 'ilce': ilce,
+      if (band != null && band.isNotEmpty) 'band': band,
+    };
+    final uri = Uri.parse('${AppConfig.apiBase}/mobile/hospitals').replace(queryParameters: qp);
+    final res = await _client.get(uri, headers: _headers);
+    return await _decode(res);
+  }
+
   Future<Map<String, dynamic>> weekend() async {
     final uri = Uri.parse('${AppConfig.apiBase}/discover/weekend');
+    final res = await _client.get(uri, headers: _headers);
+    return await _decode(res);
+  }
+
+  /// 1 günlük rota — web /rota ile aynı motor.
+  Future<Map<String, dynamic>> planDayRoute({
+    int people = 2,
+    int budgetTl = 0,
+    String transport = 'bus',
+  }) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/route').replace(
+      queryParameters: {
+        'people': '${people.clamp(1, 8)}',
+        if (budgetTl > 0) 'budget': '$budgetTl',
+        'transport': transport,
+      },
+    );
     final res = await _client.get(uri, headers: _headers);
     return await _decode(res);
   }

@@ -85,8 +85,8 @@
     ],
     "blurb": "Nominatim · Bursa Ağız ve Diş Sağlığı Eğitim ve Araştırma Hastanesi",
     "mhrs_url": "https://mhrs.gov.tr/vatandas/#/Randevu",
-    "lat": 40.1856834,
-    "lng": 29.1285307
+    "lat": 40.1857069,
+    "lng": 29.128447
   },
   {
     "title": "Klinik Bursa Yıldırım Ağız ve Diş Sağlığı Polikliniği",
@@ -572,6 +572,23 @@
     "rating": 4.1
   },
   {
+    "title": "BTSO Eğitim Vadisi",
+    "lat": 40.2075813,
+    "lng": 29.0856859,
+    "ilce": "Osmangazi",
+    "address": "BTSO Eğitim Vadisi, Osmangazi",
+    "phone": "",
+    "web": "",
+    "hours_text": "Randevu ile",
+    "price_band": "Klinik",
+    "blurb": "OpenStreetMap · BTSO Eğitim Vadisi",
+    "tags": [
+      "osm",
+      "dis"
+    ],
+    "slug": "btso-egitim-vadisi"
+  },
+  {
     "slug": "bursa-ortodonti-merkezi",
     "title": "Bursa Ortodonti Merkezi",
     "ilce": "Osmangazi",
@@ -602,6 +619,23 @@
     "blurb": "Prof. Dr. Baydaş · ortodonti.",
     "slug": "prof-dr-bulent-baydas-ortodonti-dis-poliklinigi",
     "hours_text": "Randevu ile"
+  },
+  {
+    "title": "Yediselviler",
+    "lat": 40.1812998,
+    "lng": 29.0923303,
+    "ilce": "Osmangazi",
+    "address": "Yediselviler, Osmangazi",
+    "phone": "",
+    "web": "",
+    "hours_text": "Randevu ile",
+    "price_band": "Klinik",
+    "blurb": "OpenStreetMap · Yediselviler",
+    "tags": [
+      "osm",
+      "dis"
+    ],
+    "slug": "yediselviler"
   },
   {
     "title": "BURSA AĞIZ VE DİŞ SAĞLIĞI MERK 1 (D1308)",

@@ -878,10 +878,18 @@ def tags_dump(val) -> str:
 
 
 def display_rating(p) -> float | None:
-    """BursaApp puanı varsa onu, yoksa admin/Google puanını göster."""
+    """Kullanıcı puanı veya doğrulanmış admin puanı; OSM uydurma puan göstermez."""
     avg = getattr(p, "rating_avg", None)
     if avg is not None and float(avg) > 0:
         return float(avg)
+    try:
+        from models import place_extra
+
+        ex = place_extra(p)
+    except Exception:
+        ex = {}
+    if ex.get("rating_verified") is not True:
+        return None
     admin = getattr(p, "rating_admin", None)
     if admin is not None and float(admin) > 0:
         return float(admin)

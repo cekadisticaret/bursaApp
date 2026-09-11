@@ -1,4 +1,88 @@
 workflows:
+  bursaapp-ios-native:
+    name: BursaApp iOS Native (SwiftUI)
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+    working_directory: mobile-ios
+    integrations:
+      app_store_connect: bursaapp
+    environment:
+      vars:
+        BUNDLE_ID: com.bursaapp.mobile
+        APP_STORE_APPLE_ID: "6809813024"
+      xcode: latest
+      ios_signing:
+        provisioning_profiles:
+          - bursaapp_appstore
+        certificates:
+          - bursaapp_dist
+    scripts:
+      - name: Install XcodeGen
+        script: |
+          set -e
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
+          fi
+          xcodegen --version
+      - name: Resolve iOS build number
+        script: |
+          set -e
+          eval "$(bash scripts/ios_resolve_build.sh resolve project.yml | sed 's/^/export IOS_/')"
+          echo "App Store=$IOS_asc_latest · TestFlight=$IOS_tf_latest · local=+$IOS_local_build · son=$IOS_store_latest · YENİ=+$IOS_next_build"
+          bash scripts/ios_resolve_build.sh apply "$IOS_version_name" "$IOS_next_build" project.yml
+          echo "$IOS_version_name" > .ios_version_name
+          echo "$IOS_next_build" > .ios_build_number
+          grep CURRENT_PROJECT_VERSION project.yml
+      - name: Generate Xcode project
+        script: |
+          set -e
+          xcodegen generate
+          ls -la BursaApp.xcodeproj
+      - name: Set up code signing
+        script: |
+          set -e
+          keychain initialize
+          keychain add-certificates
+          xcode-project use-profiles
+          if [ ! -f "$HOME/export_options.plist" ]; then
+            echo "HATA: export_options.plist yok."
+            exit 1
+          fi
+          echo "✓ export_options.plist hazır"
+      - name: Build IPA
+        script: |
+          set -e
+          VERSION_NAME=$(cat .ios_version_name)
+          BUILD_NUMBER=$(cat .ios_build_number)
+          xcode-project build-ipa \
+            --project BursaApp.xcodeproj \
+            --scheme BursaApp \
+            --archive-flags "MARKETING_VERSION=$VERSION_NAME CURRENT_PROJECT_VERSION=$BUILD_NUMBER"
+          mkdir -p artifacts
+          find build -name '*.ipa' -exec cp {} artifacts/ \;
+          ls -la artifacts/ || find . -name '*.ipa'
+      - name: Upload to App Store Connect
+        script: |
+          set -e
+          BUILD_NUMBER=$(cat .ios_build_number)
+          ASC=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
+          TF=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
+          STORE_LATEST=0
+          for v in "$ASC" "$TF"; do
+            if [[ "$v" =~ ^[0-9]+$ ]] && [ "$v" -gt "$STORE_LATEST" ]; then STORE_LATEST=$v; fi
+          done
+          IPA=$(find artifacts build -name '*.ipa' 2>/dev/null | head -1)
+          if [ -z "$IPA" ]; then echo "HATA: IPA yok"; exit 1; fi
+          if bash scripts/ios_resolve_build.sh should-upload "$BUILD_NUMBER" "$STORE_LATEST"; then
+            app-store-connect publish --path "$IPA"
+            echo "✓ Native IPA yüklendi (build $BUILD_NUMBER)"
+          else
+            echo "✓ Upload atlandı"
+          fi
+    artifacts:
+      - artifacts/*.ipa
+      - build/**/*.ipa
+
   bursaapp-ios-testflight:
     name: BursaApp iOS TestFlight
     max_build_duration: 90

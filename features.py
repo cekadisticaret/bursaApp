@@ -1295,16 +1295,24 @@ def api_map():
 @bp.route("/api/v1/route")
 def api_route():
     try:
-        budget = int(request.args.get("budget") or 0)
+        budget = int(request.args.get("budget") or request.args.get("budget_tl") or 0)
     except ValueError:
         budget = 0
     try:
-        people = int(request.args.get("people") or 2)
+        people = max(1, min(int(request.args.get("people") or 2), 8))
     except ValueError:
         people = 2
+    transport = (request.args.get("transport") or "bus").strip()
+    if transport not in ("car", "bus", "walk"):
+        transport = "bus"
     db = SessionLocal()
     try:
-        return jsonify({"ok": True, **build_day_route(db, budget_tl=budget, people=people)})
+        return jsonify(
+            {
+                "ok": True,
+                **build_day_route(db, budget_tl=budget, people=people, transport=transport),
+            }
+        )
     finally:
         db.close()
 

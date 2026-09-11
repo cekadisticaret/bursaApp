@@ -4,10 +4,16 @@ import '../core/api/models.dart';
 import '../screens/activity_buddy_screen.dart';
 import '../screens/bursaspor_screen.dart';
 import '../screens/category_places_screen.dart';
+import '../screens/dentists_screen.dart';
+import '../screens/doctors_screen.dart';
+import '../screens/hospitals_screen.dart';
+import '../screens/hotels_screen.dart';
 import '../screens/news_screen.dart';
 import '../screens/pharmacy_screen.dart';
+import '../screens/route_planner_screen.dart';
 import '../screens/teleferik_screen.dart';
 import '../screens/utilities_screen.dart';
+import '../screens/vets_screen.dart';
 import '../screens/visit_screen.dart';
 import '../screens/weekend_screen.dart';
 import '../shell/shell_scope.dart';
@@ -34,8 +40,10 @@ void openMenuLink(BuildContext context, MenuLink item) {
       return;
     case '/etrafimda':
     case '/harita':
-    case '/rota':
       goTab(ShellTabs.explore);
+      return;
+    case '/rota':
+      Navigator.of(context).push(appRoute(const RoutePlannerScreen()));
       return;
     case '/arkadas-ara':
       Navigator.of(context).push(appRoute(const ActivityBuddyScreen()));
@@ -57,6 +65,24 @@ void openMenuLink(BuildContext context, MenuLink item) {
       return;
     case '/faturalar':
       Navigator.of(context).push(appRoute(const UtilitiesScreen()));
+      return;
+    case '/kamp':
+      Navigator.of(context).push(appRoute(const CategoryPlacesScreen(title: 'Kamp alanları', category: 'camp')));
+      return;
+    case '/oteller':
+      Navigator.of(context).push(appRoute(const HotelsScreen()));
+      return;
+    case '/veterinerler':
+      Navigator.of(context).push(appRoute(const VetsScreen()));
+      return;
+    case '/dis-hekimleri':
+      Navigator.of(context).push(appRoute(const DentistsScreen()));
+      return;
+    case '/doktorlar':
+      Navigator.of(context).push(appRoute(const DoctorsScreen()));
+      return;
+    case '/hastaneler':
+      Navigator.of(context).push(appRoute(const HospitalsScreen()));
       return;
     case '/eglence':
       Navigator.of(context).push(appRoute(const CategoryPlacesScreen(title: 'Eğlence', category: 'fun')));

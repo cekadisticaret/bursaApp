@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../navigation/app_routes.dart';
 import '../navigation/feed_nav.dart';
+import '../screens/hotels_screen.dart';
 import '../screens/category_places_screen.dart';
 
 class FeedFilterOption {
@@ -61,6 +62,10 @@ class FeedFilterSheet extends StatelessWidget {
       case FeedFilterAction.category:
         final key = _categoryKeys[opt.label];
         if (key == null) return;
+        if (key == 'hotel') {
+          Navigator.of(context).push(appRoute(const HotelsScreen()));
+          return;
+        }
         Navigator.of(context).push(
           appRoute(CategoryPlacesScreen(title: opt.label, category: key)),
         );
