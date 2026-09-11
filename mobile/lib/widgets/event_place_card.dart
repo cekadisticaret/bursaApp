@@ -18,25 +18,32 @@ class EventPlaceCard extends StatelessWidget {
       if (place.venueName.isNotEmpty) place.venueName else if (place.ilce.isNotEmpty) place.ilce,
     ].join(' · ');
 
-    return Material(
-      color: AppColors.card,
-      borderRadius: BorderRadius.circular(AppRadii.lg),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: place.slug.isEmpty ? null : () => openPlaceDetail(context, place.slug),
+    void openDetail() {
+      if (place.slug.isEmpty) return;
+      openPlaceDetail(context, place.slug);
+    }
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: openDetail,
+      child: Material(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        clipBehavior: Clip.antiAlias,
+        elevation: 0,
         child: Container(
+          height: 112,
           decoration: BoxDecoration(
             border: Border.all(color: AppColors.muted.withValues(alpha: 0.12)),
             borderRadius: BorderRadius.circular(AppRadii.lg),
           ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               ClipRRect(
                 borderRadius: const BorderRadius.horizontal(left: Radius.circular(AppRadii.lg)),
                 child: SizedBox(
                   width: 96,
-                  height: 112,
                   child: place.imgUrl.isNotEmpty
                       ? CachedNetworkImage(
                           imageUrl: place.imgUrl.startsWith('http') ? place.imgUrl : '${AppConfig.siteBase}${place.imgUrl}',
@@ -44,7 +51,11 @@ class EventPlaceCard extends StatelessWidget {
                         )
                       : ColoredBox(
                           color: AppColors.bgSoft,
-                          child: Icon(Icons.event_rounded, color: AppColors.muted.withValues(alpha: 0.45), size: 32),
+                          child: Icon(
+                            place.category == 'cinema' ? Icons.movie_rounded : Icons.event_rounded,
+                            color: AppColors.muted.withValues(alpha: 0.45),
+                            size: 32,
+                          ),
                         ),
                 ),
               ),
@@ -68,8 +79,7 @@ class EventPlaceCard extends StatelessWidget {
                       if (meta.isNotEmpty) ...[
                         const SizedBox(height: 6),
                         Text(meta, style: const TextStyle(color: AppColors.muted, fontSize: 12, height: 1.35)),
-                      ],
-                      if (place.blurb.isNotEmpty) ...[
+                      ] else if (place.blurb.isNotEmpty) ...[
                         const SizedBox(height: 6),
                         Text(
                           place.blurb,
@@ -83,7 +93,7 @@ class EventPlaceCard extends StatelessWidget {
                 ),
               ),
               const Padding(
-                padding: EdgeInsets.only(top: 44, right: 10),
+                padding: EdgeInsets.only(right: 8),
                 child: Icon(Icons.chevron_right_rounded, color: AppColors.muted),
               ),
             ],

@@ -76,6 +76,7 @@ class _DestinationCardState extends State<DestinationCard> {
   Widget build(BuildContext context) {
     final img = widget.place.imgUrl;
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: _openDetail,
       child: Container(
         height: 190,

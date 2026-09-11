@@ -82,16 +82,14 @@ class _CategoryPlacesScreenState extends State<CategoryPlacesScreen> {
                         Center(child: Text('Bu kategoride kayıt yok.', style: TextStyle(color: AppColors.muted))),
                       ],
                     )
-                  : ListView.builder(
+                  : ListView.separated(
                       physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                       itemCount: _places.length,
-                      itemBuilder: (context, i) => Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
-                        child: _eventList
-                            ? EventPlaceCard(place: _places[i])
-                            : DestinationCard(place: _places[i]),
-                      ),
+                      separatorBuilder: (_, __) => const SizedBox(height: 14),
+                      itemBuilder: (context, i) => _eventList
+                          ? EventPlaceCard(place: _places[i])
+                          : DestinationCard(place: _places[i]),
                     ),
     );
   }

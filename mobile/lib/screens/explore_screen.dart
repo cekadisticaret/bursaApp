@@ -12,6 +12,8 @@ import '../core/map_tiles.dart';
 import '../core/theme/app_theme.dart';
 import '../widgets/category_pills.dart';
 
+import '../navigation/place_nav.dart';
+
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
 
@@ -527,35 +529,45 @@ class _PlaceSheet extends StatelessWidget {
       ),
       child: Row(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: SizedBox(
-              width: 72,
-              height: 72,
-              child: img.isNotEmpty
-                  ? CachedNetworkImage(
-                      imageUrl: img.startsWith('http') ? img : '${AppConfig.siteBase}$img',
-                      fit: BoxFit.cover,
-                    )
-                  : ColoredBox(color: AppColors.bgSoft, child: Icon(Icons.store, color: AppColors.muted.withValues(alpha: 0.4))),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: place.slug.isNotEmpty ? () => openPlaceDetail(context, place.slug) : null,
+            child: Row(
               children: [
-                Text(place.title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-                Text(
-                  [
-                    place.ilce,
-                    if (routeInfo != null && routeInfo!.isNotEmpty) routeInfo!,
-                  ].where((e) => e.isNotEmpty).join(' · '),
-                  style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: SizedBox(
+                    width: 72,
+                    height: 72,
+                    child: img.isNotEmpty
+                        ? CachedNetworkImage(
+                            imageUrl: img.startsWith('http') ? img : '${AppConfig.siteBase}$img',
+                            fit: BoxFit.cover,
+                          )
+                        : ColoredBox(color: AppColors.bgSoft, child: Icon(Icons.store, color: AppColors.muted.withValues(alpha: 0.4))),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: MediaQuery.sizeOf(context).width * 0.46,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(place.title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                      Text(
+                        [
+                          place.ilce,
+                          if (routeInfo != null && routeInfo!.isNotEmpty) routeInfo!,
+                        ].where((e) => e.isNotEmpty).join(' · '),
+                        style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
+          const Spacer(),
           FilledButton(
             onPressed: routeLoading ? null : onRoute,
             style: FilledButton.styleFrom(
