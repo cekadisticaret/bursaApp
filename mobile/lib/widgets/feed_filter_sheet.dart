@@ -4,9 +4,6 @@ import '../core/theme/app_theme.dart';
 import '../navigation/app_routes.dart';
 import '../navigation/feed_nav.dart';
 import '../screens/category_places_screen.dart';
-import '../screens/visit_screen.dart';
-import '../shell/shell_scope.dart';
-import '../widgets/floating_tab_bar.dart';
 
 class FeedFilterOption {
   const FeedFilterOption({required this.label, required this.icon, required this.action});

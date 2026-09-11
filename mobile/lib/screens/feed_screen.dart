@@ -344,15 +344,7 @@ class _FeedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        boxShadow: AppShadows.card,
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
+    final body = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
@@ -414,18 +406,51 @@ class _FeedCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 _PillAction(icon: Icons.chat_bubble_outline, label: '${item.comments}', onTap: () => requireAuth(context, () {})),
                 const Spacer(),
-                if (item.placeTitle != null)
-                  GestureDetector(
-                    onTap: onPlaceTap,
-                    child: Text(
-                      item.placeTitle!,
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.accentDeep),
-                    ),
+                if (onPlaceTap != null)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        item.placeTitle ?? 'Mekanı gör',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.accentDeep),
+                      ),
+                      const Icon(Icons.chevron_right_rounded, size: 16, color: AppColors.accentDeep),
+                    ],
                   ),
               ],
             ),
           ),
         ],
+      );
+
+    if (onPlaceTap == null) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          boxShadow: AppShadows.card,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: body,
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        boxShadow: AppShadows.card,
+      ),
+      child: Material(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onPlaceTap,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          child: body,
+        ),
       ),
     );
   }
@@ -441,6 +466,7 @@ class _PillAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
