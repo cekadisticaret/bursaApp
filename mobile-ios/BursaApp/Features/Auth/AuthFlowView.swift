@@ -1,5 +1,19 @@
 import SwiftUI
 
+// MARK: - Auth palette (referans onboarding)
+
+private enum AuthPalette {
+    static let sage = Color(red: 0.710, green: 0.788, blue: 0.604)       // #B5C99A
+    static let forest = Color(red: 0.118, green: 0.224, blue: 0.165)     // #1E392A
+    static let hill = Color(red: 0.420, green: 0.561, blue: 0.443)
+    static let hillDark = Color(red: 0.298, green: 0.451, blue: 0.357)
+    static let balloonYellow = Color(red: 0.965, green: 0.820, blue: 0.380)
+    static let pinOrange = Color(red: 0.976, green: 0.659, blue: 0.145)
+    static let shoeYellow = Color(red: 0.918, green: 0.773, blue: 0.235)
+    static let mapYellow = Color(red: 0.992, green: 0.878, blue: 0.278)
+    static let mutedText = Color(red: 0.165, green: 0.282, blue: 0.212)
+}
+
 struct AuthFlowView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var auth: AuthStore
@@ -21,7 +35,13 @@ struct AuthFlowView: View {
                         onRegister: { path.append(AuthRoute.register) }
                     )
                 case .register:
-                    AuthRegisterView(onSuccess: { dismiss() })
+                    AuthRegisterView(
+                        onSuccess: { dismiss() },
+                        onLogin: {
+                            path.removeLast()
+                            if path.isEmpty { path.append(AuthRoute.login) }
+                        }
+                    )
                 case .forgot(let email):
                     AuthForgotPasswordView(initialEmail: email)
                 }
@@ -36,54 +56,124 @@ private enum AuthRoute: Hashable {
     case forgot(String)
 }
 
-// MARK: - Shared auth UI
+// MARK: - Shared components
 
-private struct AuthScreenShell<Content: View>: View {
-    let title: String
-    let onBack: (() -> Void)?
-    @ViewBuilder let content: Content
+private struct AuthBackButton: View {
+    let action: () -> Void
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                content
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 12)
-            .padding(.bottom, 32)
+        Button(action: action) {
+            Image(systemName: "chevron.left")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(AuthPalette.forest)
+                .frame(width: 44, height: 44, alignment: .leading)
         }
-        .background(AppColors.bg.ignoresSafeArea())
-        .navigationBarTitleDisplayMode(.inline)
-        .navigationTitle(title)
-        .toolbar {
-            if let onBack {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button(action: onBack) {
-                        Image(systemName: "chevron.left")
-                            .font(.body.weight(.semibold))
-                            .foregroundStyle(AppColors.ink)
-                    }
-                }
-            }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct AuthTitleBadge: View {
+    let line1: String
+    let line2: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(line1)
+                .font(.system(size: 36, weight: .black))
+                .foregroundStyle(AuthPalette.forest)
+            Text(line2)
+                .font(.system(size: 36, weight: .black))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(AuthPalette.forest)
+                )
         }
     }
 }
 
-private struct AuthHeadline: View {
+private struct AuthHeroCopy: View {
     let title: String
+    let highlight: String
     let subtitle: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.system(size: 28, weight: .black))
-                .foregroundStyle(AppColors.ink)
+        VStack(alignment: .leading, spacing: 12) {
+            (
+                Text(title)
+                    .font(.system(size: 26, weight: .black))
+                    .foregroundStyle(AuthPalette.forest)
+                + Text(highlight)
+                    .font(.system(size: 26, weight: .black))
+                    .foregroundStyle(AuthPalette.forest)
+                + Text(" 🏔")
+                    .font(.system(size: 24))
+            )
+            .fixedSize(horizontal: false, vertical: true)
+
             Text(subtitle)
-                .font(.subheadline)
-                .foregroundStyle(AppColors.muted)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(AuthPalette.mutedText.opacity(0.85))
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.bottom, 28)
+    }
+}
+
+private struct AuthPrimaryCapsuleButton: View {
+    let title: String
+    var loading = false
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle()
+                        .fill(.white)
+                        .frame(width: 38, height: 38)
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(AuthPalette.forest)
+                        .offset(x: 1)
+                }
+                Text(loading ? "\(title)…" : title)
+                    .font(.system(size: 18, weight: .heavy))
+                Spacer(minLength: 0)
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 16, weight: .bold))
+            }
+            .foregroundStyle(.white)
+            .padding(.leading, 10)
+            .padding(.trailing, 22)
+            .padding(.vertical, 16)
+            .background(Capsule().fill(AuthPalette.forest))
+        }
+        .disabled(loading)
+        .buttonStyle(.plain)
+    }
+}
+
+private struct AuthFooterLink: View {
+    let prefix: String
+    let actionText: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            (
+                Text(prefix + " ")
+                    .foregroundStyle(AuthPalette.mutedText.opacity(0.9))
+                + Text(actionText)
+                    .fontWeight(.black)
+                    .foregroundStyle(AuthPalette.forest)
+            )
+            .font(.system(size: 14, weight: .medium))
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 18)
     }
 }
 
@@ -93,7 +183,6 @@ private struct AuthField: View {
     var keyboard: UIKeyboardType = .default
     var contentType: UITextContentType?
     var isSecure = false
-    var showToggle = false
     @Binding var reveal: Bool
 
     init(
@@ -109,7 +198,6 @@ private struct AuthField: View {
         self.keyboard = keyboard
         self.contentType = contentType
         self.isSecure = isSecure
-        self.showToggle = isSecure
         _reveal = reveal
     }
 
@@ -117,7 +205,7 @@ private struct AuthField: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
                 .font(.caption.weight(.bold))
-                .foregroundStyle(AppColors.muted)
+                .foregroundStyle(AuthPalette.mutedText.opacity(0.75))
             HStack {
                 Group {
                     if isSecure && !reveal {
@@ -131,67 +219,223 @@ private struct AuthField: View {
                     }
                 }
                 .font(.body.weight(.semibold))
-                .foregroundStyle(AppColors.ink)
-                if showToggle {
-                    Button {
-                        reveal.toggle()
-                    } label: {
+                .foregroundStyle(AuthPalette.forest)
+                if isSecure {
+                    Button { reveal.toggle() } label: {
                         Image(systemName: reveal ? "eye.slash" : "eye")
-                            .foregroundStyle(AppColors.muted)
+                            .foregroundStyle(AuthPalette.mutedText.opacity(0.6))
                     }
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
             .background(
-                RoundedRectangle(cornerRadius: AppRadii.md, style: .continuous)
-                    .fill(AppColors.card)
-                    .shadow(color: AppColors.ink.opacity(0.06), radius: 12, y: 6)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(Color.white.opacity(0.92))
             )
         }
     }
 }
 
-private struct AuthPrimaryButton: View {
-    let title: String
-    let loading: Bool
-    let action: () -> Void
+private struct AuthFormShell<Content: View>: View {
+    let line1: String
+    let line2: String
+    let heroTitle: String
+    let heroHighlight: String
+    let heroSubtitle: String
+    let onBack: () -> Void
+    @ViewBuilder let content: Content
 
     var body: some View {
-        Button(action: action) {
-            Text(loading ? "\(title)…" : title)
-                .font(.headline.weight(.bold))
-                .foregroundStyle(AppColors.lime)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(
-                    RoundedRectangle(cornerRadius: AppRadii.md, style: .continuous)
-                        .fill(AppColors.nav)
-                )
+        ZStack {
+            AuthPalette.sage.ignoresSafeArea()
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    AuthBackButton(action: onBack)
+                    AuthTitleBadge(line1: line1, line2: line2)
+                        .padding(.top, 4)
+                    AuthTravelIllustration(compact: true)
+                        .frame(height: 150)
+                        .padding(.vertical, 12)
+                    AuthHeroCopy(title: heroTitle, highlight: heroHighlight, subtitle: heroSubtitle)
+                        .padding(.bottom, 22)
+                    content
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 28)
+            }
         }
-        .disabled(loading)
-        .buttonStyle(.plain)
+        .navigationBarHidden(true)
     }
 }
 
-private struct AuthInlineLink: View {
-    let prefix: String
-    let actionText: String
-    let action: () -> Void
+// MARK: - Illustration
+
+private struct AuthTravelIllustration: View {
+    var compact = false
 
     var body: some View {
-        Button(action: action) {
-            HStack(spacing: 4) {
-                Text(prefix).foregroundStyle(AppColors.muted)
-                Text(actionText)
-                    .fontWeight(.black)
-                    .foregroundStyle(AppColors.nav)
+        GeometryReader { geo in
+            let w = geo.size.width
+            let h = geo.size.height
+            let scale = compact ? min(w / 340, h / 150) : min(w / 340, h / 220)
+
+            ZStack {
+                cloud(at: CGPoint(x: w * 0.18, y: h * 0.12), scale: scale)
+                cloud(at: CGPoint(x: w * 0.72, y: h * 0.08), scale: scale * 0.85)
+
+                // Balloon
+                ZStack {
+                    Ellipse()
+                        .fill(
+                            LinearGradient(
+                                colors: [AuthPalette.balloonYellow, AuthPalette.hill],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 74 * scale, height: 92 * scale)
+                    VStack(spacing: 0) {
+                        ForEach(0..<4, id: \.self) { i in
+                            Rectangle()
+                                .fill(i.isMultiple(of: 2) ? AuthPalette.balloonYellow : AuthPalette.hill)
+                                .frame(width: 74 * scale, height: 8 * scale)
+                        }
+                    }
+                    .clipShape(Ellipse())
+                    .frame(width: 74 * scale, height: 92 * scale)
+                    Rectangle()
+                        .fill(AuthPalette.forest.opacity(0.5))
+                        .frame(width: 2 * scale, height: 28 * scale)
+                        .offset(y: 56 * scale)
+                }
+                .offset(x: w * 0.28, y: h * 0.02)
+
+                // Airplane badge
+                Circle()
+                    .fill(AuthPalette.forest)
+                    .frame(width: 44 * scale, height: 44 * scale)
+                    .overlay {
+                        Image(systemName: "airplane")
+                            .font(.system(size: 18 * scale, weight: .bold))
+                            .foregroundStyle(.white)
+                            .rotationEffect(.degrees(-35))
+                    }
+                    .offset(x: w * 0.42, y: h * 0.14)
+
+                // Hills
+                AuthHillShape()
+                    .fill(AuthPalette.hill)
+                    .frame(height: h * 0.42)
+                    .frame(maxHeight: .infinity, alignment: .bottom)
+                AuthHillShape()
+                    .fill(AuthPalette.hillDark)
+                    .frame(height: h * 0.28)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .frame(maxHeight: .infinity, alignment: .bottom)
+                    .offset(x: w * 0.22)
+
+                // Location pin
+                VStack(spacing: 0) {
+                    Image(systemName: "mappin.circle.fill")
+                        .font(.system(size: 38 * scale))
+                        .foregroundStyle(AuthPalette.pinOrange)
+                        .background(Circle().fill(.white).padding(4 * scale))
+                }
+                .offset(x: w * 0.30, y: h * 0.36)
+
+                // Hiker
+                hiker(scale: scale)
+                    .offset(x: -w * 0.06, y: h * 0.30)
+
+                // Foreground leaves
+                leaf(scale: scale)
+                    .offset(x: w * 0.34, y: h * 0.58)
+                leaf(scale: scale * 0.8)
+                    .rotationEffect(.degrees(25))
+                    .offset(x: w * 0.42, y: h * 0.62)
             }
-            .font(.subheadline)
-            .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.plain)
-        .padding(.top, 16)
+    }
+
+    private func cloud(at point: CGPoint, scale: CGFloat) -> some View {
+        ZStack {
+            Circle().fill(.white.opacity(0.95)).frame(width: 34 * scale, height: 34 * scale)
+            Circle().fill(.white.opacity(0.95)).frame(width: 26 * scale, height: 26 * scale).offset(x: 22 * scale)
+            Circle().fill(.white.opacity(0.95)).frame(width: 20 * scale, height: 20 * scale).offset(x: -18 * scale, y: 6 * scale)
+        }
+        .position(point)
+    }
+
+    private func hiker(scale: CGFloat) -> some View {
+        ZStack {
+            // Legs
+            RoundedRectangle(cornerRadius: 3 * scale)
+                .fill(AuthPalette.forest)
+                .frame(width: 10 * scale, height: 34 * scale)
+                .offset(x: -8 * scale, y: 38 * scale)
+            RoundedRectangle(cornerRadius: 3 * scale)
+                .fill(AuthPalette.forest)
+                .frame(width: 10 * scale, height: 34 * scale)
+                .offset(x: 8 * scale, y: 38 * scale)
+            // Shoes
+            Capsule()
+                .fill(AuthPalette.shoeYellow)
+                .frame(width: 16 * scale, height: 8 * scale)
+                .offset(x: -8 * scale, y: 56 * scale)
+            Capsule()
+                .fill(AuthPalette.shoeYellow)
+                .frame(width: 16 * scale, height: 8 * scale)
+                .offset(x: 8 * scale, y: 56 * scale)
+            // Body
+            RoundedRectangle(cornerRadius: 8 * scale)
+                .fill(AuthPalette.hill)
+                .frame(width: 38 * scale, height: 44 * scale)
+                .offset(y: 8 * scale)
+            // Backpack
+            RoundedRectangle(cornerRadius: 6 * scale)
+                .fill(AuthPalette.hillDark)
+                .frame(width: 18 * scale, height: 28 * scale)
+                .offset(x: -22 * scale, y: 6 * scale)
+            // Map
+            RoundedRectangle(cornerRadius: 4 * scale)
+                .fill(AuthPalette.mapYellow)
+                .frame(width: 28 * scale, height: 22 * scale)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 2 * scale)
+                        .stroke(AuthPalette.forest.opacity(0.25), lineWidth: 1)
+                }
+                .offset(x: 18 * scale, y: 4 * scale)
+            // Head
+            Circle()
+                .fill(Color(red: 0.93, green: 0.82, blue: 0.72))
+                .frame(width: 26 * scale, height: 26 * scale)
+                .offset(y: -22 * scale)
+            // Hat
+            Capsule()
+                .fill(AuthPalette.hill)
+                .frame(width: 34 * scale, height: 12 * scale)
+                .offset(y: -32 * scale)
+        }
+    }
+
+    private func leaf(scale: CGFloat) -> some View {
+        Ellipse()
+            .fill(AuthPalette.forest.opacity(0.85))
+            .frame(width: 34 * scale, height: 16 * scale)
+    }
+}
+
+private struct AuthHillShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: 0, y: rect.maxY))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.maxX, y: rect.maxY),
+            control: CGPoint(x: rect.midX, y: rect.minY - rect.height * 0.15)
+        )
+        path.closeSubpath()
+        return path
     }
 }
 
@@ -204,118 +448,34 @@ private struct AuthWelcomeView: View {
 
     var body: some View {
         ZStack {
-            AppColors.welcomeBg.ignoresSafeArea()
+            AuthPalette.sage.ignoresSafeArea()
             VStack(alignment: .leading, spacing: 0) {
-                Button(action: onClose) {
-                    Image(systemName: "chevron.left")
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(AppColors.ink)
-                }
-                .padding(.top, 8)
+                AuthBackButton(action: onClose)
 
-                welcomeHeadline
+                AuthTitleBadge(line1: "Explore", line2: "Worldwide")
+                    .padding(.top, 4)
+
+                AuthTravelIllustration()
+                    .frame(height: 240)
                     .padding(.top, 8)
 
-                Spacer(minLength: 24)
+                Spacer(minLength: 16)
 
-                AuthWelcomeIllustration()
-                    .frame(height: 220)
-                    .frame(maxWidth: .infinity)
+                AuthHeroCopy(
+                    title: "Discover The World With ",
+                    highlight: "Travel Guider",
+                    subtitle: "Explore destinations, cultures, and hidden gems with our travel guide"
+                )
 
-                Spacer(minLength: 24)
+                AuthPrimaryCapsuleButton(title: "Let's get started!", action: onStart)
+                    .padding(.top, 26)
 
-                Text("BursaApp ile şehrini tanı")
-                    .font(.system(size: 26, weight: .black))
-                    .foregroundStyle(AppColors.nav)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
-
-                Text("Restoran, gezi, etkinlik ve nöbetçi eczane — hepsi tek rehberde.")
-                    .font(.subheadline)
-                    .foregroundStyle(AppColors.muted)
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 10)
-                    .frame(maxWidth: .infinity)
-
-                Button(action: onStart) {
-                    HStack(spacing: 12) {
-                        ZStack {
-                            Circle().fill(.white).frame(width: 34, height: 34)
-                            Image(systemName: "play.fill")
-                                .foregroundStyle(AppColors.nav)
-                        }
-                        Text("Başlayalım!")
-                            .font(.system(size: 18, weight: .heavy))
-                        Spacer()
-                        Image(systemName: "arrow.right")
-                    }
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 18)
-                    .background(Capsule().fill(AppColors.nav))
-                }
-                .buttonStyle(.plain)
-                .padding(.top, 28)
-
-                AuthInlineLink(prefix: "Hesabın yok mu?", actionText: "Kayıt ol", action: onRegister)
+                AuthFooterLink(prefix: "You do not have any account?", actionText: "Sign Up", action: onRegister)
             }
             .padding(.horizontal, 24)
-            .padding(.bottom, 16)
+            .padding(.bottom, 20)
         }
         .navigationBarHidden(true)
-    }
-
-    private var welcomeHeadline: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("Bursa'yı")
-                .font(.system(size: 34, weight: .black))
-                .foregroundStyle(AppColors.ink)
-            Text("Keşfet")
-                .font(.system(size: 34, weight: .black))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 2)
-                .background(AppColors.nav)
-        }
-        .lineSpacing(2)
-    }
-}
-
-private struct AuthWelcomeIllustration: View {
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 120, style: .continuous)
-                .fill(AppColors.accentDeep.opacity(0.35))
-                .frame(height: 72)
-                .padding(.horizontal, 24)
-                .frame(maxHeight: .infinity, alignment: .bottom)
-
-            Circle()
-                .fill(AppColors.lime.opacity(0.55))
-                .overlay(Circle().stroke(AppColors.accentDeep, lineWidth: 3))
-                .frame(width: 96, height: 96)
-                .overlay {
-                    Image(systemName: "figure.hiking")
-                        .font(.system(size: 42, weight: .semibold))
-                        .foregroundStyle(AppColors.nav)
-                }
-                .offset(y: 18)
-
-            RoundedRectangle(cornerRadius: 36, style: .continuous)
-                .fill(AppColors.amber)
-                .frame(width: 72, height: 88)
-                .overlay {
-                    Image(systemName: "wind")
-                        .font(.system(size: 34, weight: .semibold))
-                        .foregroundStyle(AppColors.nav)
-                }
-                .offset(x: 48, y: -36)
-
-            Image(systemName: "mappin.and.ellipse")
-                .font(.system(size: 30, weight: .semibold))
-                .foregroundStyle(AppColors.coral.opacity(0.85))
-                .offset(x: -72, y: -48)
-        }
     }
 }
 
@@ -333,11 +493,14 @@ struct AuthLoginView: View {
     let onRegister: () -> Void
 
     var body: some View {
-        AuthScreenShell(title: "Giriş yap", onBack: { dismiss() }) {
-            AuthHeadline(
-                title: "Hesabınla devam et",
-                subtitle: "Beğeni, yorum ve etkinlik için giriş yap."
-            )
+        AuthFormShell(
+            line1: "Hoş",
+            line2: "geldin",
+            heroTitle: "Hesabınla ",
+            heroHighlight: "devam et",
+            heroSubtitle: "Beğeni, yorum ve etkinlik paylaşımı için giriş yap.",
+            onBack: { dismiss() }
+        ) {
             AuthField(label: "E-posta", text: $email, keyboard: .emailAddress, contentType: .emailAddress)
             AuthField(
                 label: "Şifre",
@@ -346,15 +509,15 @@ struct AuthLoginView: View {
                 isSecure: true,
                 reveal: $revealPassword
             )
-            .padding(.top, 12)
+            .padding(.top, 14)
 
             HStack {
                 Spacer()
                 Button("Şifremi unuttum") { onForgot(email) }
                     .font(.subheadline.weight(.heavy))
-                    .foregroundStyle(AppColors.nav)
+                    .foregroundStyle(AuthPalette.forest)
             }
-            .padding(.top, 8)
+            .padding(.top, 10)
 
             if let error {
                 Text(error)
@@ -363,13 +526,13 @@ struct AuthLoginView: View {
                     .padding(.top, 12)
             }
 
-            AuthPrimaryButton(title: "Giriş yap", loading: auth.loading) {
+            AuthPrimaryCapsuleButton(title: "Giriş yap", loading: auth.loading) {
                 Task { await submit() }
             }
-            .padding(.top, 24)
+            .padding(.top, 22)
             .disabled(email.isEmpty || password.isEmpty)
 
-            AuthInlineLink(prefix: "Hesabın yok mu?", actionText: "Kayıt ol", action: onRegister)
+            AuthFooterLink(prefix: "Hesabın yok mu?", actionText: "Kayıt ol", action: onRegister)
         }
         .onAppear {
             if email.isEmpty, let saved = auth.savedEmail { email = saved }
@@ -399,16 +562,20 @@ struct AuthRegisterView: View {
     @State private var revealPassword = false
     @State private var error: String?
     let onSuccess: () -> Void
+    let onLogin: () -> Void
 
     var body: some View {
-        AuthScreenShell(title: "Kayıt ol", onBack: { dismiss() }) {
-            AuthHeadline(
-                title: "BursaApp'e katıl",
-                subtitle: "Ücretsiz hesap — puan kazan, etkinlik paylaş."
-            )
+        AuthFormShell(
+            line1: "Hesap",
+            line2: "oluştur",
+            heroTitle: "BursaApp'e ",
+            heroHighlight: "katıl",
+            heroSubtitle: "Ücretsiz hesap — puan kazan, etkinlik paylaş.",
+            onBack: { dismiss() }
+        ) {
             AuthField(label: "Ad Soyad", text: $name, contentType: .name)
             AuthField(label: "E-posta", text: $email, keyboard: .emailAddress, contentType: .emailAddress)
-                .padding(.top, 12)
+                .padding(.top, 14)
             AuthField(
                 label: "Şifre (en az 8 karakter)",
                 text: $password,
@@ -416,7 +583,7 @@ struct AuthRegisterView: View {
                 isSecure: true,
                 reveal: $revealPassword
             )
-            .padding(.top, 12)
+            .padding(.top, 14)
 
             if let error {
                 Text(error)
@@ -425,11 +592,13 @@ struct AuthRegisterView: View {
                     .padding(.top, 12)
             }
 
-            AuthPrimaryButton(title: "Hesap oluştur", loading: auth.loading) {
+            AuthPrimaryCapsuleButton(title: "Kayıt ol", loading: auth.loading) {
                 Task { await submit() }
             }
-            .padding(.top, 24)
+            .padding(.top, 22)
             .disabled(name.isEmpty || email.isEmpty || password.count < 8)
+
+            AuthFooterLink(prefix: "Zaten hesabın var mı?", actionText: "Giriş yap", action: onLogin)
         }
         .onAppear {
             if email.isEmpty, let saved = auth.savedEmail { email = saved }
@@ -463,11 +632,14 @@ struct AuthForgotPasswordView: View {
     }
 
     var body: some View {
-        AuthScreenShell(title: "Şifremi unuttum", onBack: { dismiss() }) {
-            AuthHeadline(
-                title: "Yeni şifre e-posta ile",
-                subtitle: "Kayıtlı e-posta adresine yeni geçici şifre gönderilir. Giriş yaptıktan sonra profilden değiştirebilirsin."
-            )
+        AuthFormShell(
+            line1: "Şifre",
+            line2: "sıfırla",
+            heroTitle: "Yeni şifre ",
+            heroHighlight: "e-posta ile",
+            heroSubtitle: "Kayıtlı e-posta adresine geçici şifre gönderilir.",
+            onBack: { dismiss() }
+        ) {
             AuthField(label: "E-posta", text: $email, keyboard: .emailAddress, contentType: .emailAddress)
 
             if let error {
@@ -480,20 +652,20 @@ struct AuthForgotPasswordView: View {
             if let success {
                 Text(success)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(AppColors.ink)
+                    .foregroundStyle(AuthPalette.forest)
                     .padding(14)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
-                        RoundedRectangle(cornerRadius: AppRadii.md)
-                            .fill(AppColors.accentDeep.opacity(0.12))
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(Color.white.opacity(0.75))
                     )
                     .padding(.top, 12)
             }
 
-            AuthPrimaryButton(title: "Yeni şifre gönder", loading: loading) {
+            AuthPrimaryCapsuleButton(title: "Yeni şifre gönder", loading: loading) {
                 Task { await submit() }
             }
-            .padding(.top, 24)
+            .padding(.top, 22)
             .disabled(loading || email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
     }
@@ -517,7 +689,6 @@ struct AuthForgotPasswordView: View {
     }
 }
 
-// Geriye uyumluluk — eski adlar
 typealias LoginView = AuthLoginView
 typealias RegisterView = AuthRegisterView
 typealias ForgotPasswordView = AuthForgotPasswordView
