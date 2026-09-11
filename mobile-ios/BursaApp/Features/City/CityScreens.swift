@@ -660,8 +660,8 @@ struct TeleferikView: View {
             LinearGradient(colors: [.clear, AppColors.nav.opacity(0.85)], startPoint: .top, endPoint: .bottom)
             VStack(alignment: .leading, spacing: 6) {
                 Text("Uludağ teleferik").font(.title2.weight(.black)).foregroundStyle(.white)
-                if let tam { Text("Tam: \(tam) TL").font(.caption.weight(.heavy)).foregroundStyle(.white) }
-                if let ogr { Text("Öğrenci: \(ogr) TL").font(.caption).foregroundStyle(.white.opacity(0.9)) }
+                if let tam { Text("Tam: \(JSONValue.string(tam)) TL").font(.caption.weight(.heavy)).foregroundStyle(.white) }
+                if let ogr { Text("Öğrenci: \(JSONValue.string(ogr)) TL").font(.caption).foregroundStyle(.white.opacity(0.9)) }
                 if !updated.isEmpty { Text(updated).font(.caption2).foregroundStyle(.white.opacity(0.7)) }
             }
             .padding(16)
@@ -1029,28 +1029,34 @@ private func noteCard(title: String, body: String) -> some View {
 
 private func videosSection(_ videos: [[String: Any]]) -> some View {
     panel(title: "Yeşil-beyaz video") {
-        videoCard(videos[0], large: true)
+        BursasporVideoCard(video: videos[0], large: true)
         ForEach(Array(videos.dropFirst().prefix(4).enumerated()), id: \.offset) { _, v in
-            videoCard(v, large: false)
+            BursasporVideoCard(video: v, large: false)
         }
     }
 }
 
-@MainActor
-private func videoCard(_ video: [String: Any], large: Bool) -> some View {
-    let watch = video["watch_url"] as? String ?? ""
-    let content = VStack(alignment: .leading, spacing: 6) {
-        if let thumb = video["thumb"] as? String, !thumb.isEmpty {
-            RemoteImage(url: thumb).frame(height: large ? 160 : 100).frame(maxWidth: .infinity).clipped()
+private struct BursasporVideoCard: View {
+    let video: [String: Any]
+    let large: Bool
+
+    var body: some View {
+        let watch = video["watch_url"] as? String ?? ""
+        let content = VStack(alignment: .leading, spacing: 6) {
+            if let thumb = video["thumb"] as? String, !thumb.isEmpty {
+                RemoteImage(url: thumb).frame(height: large ? 160 : 100).frame(maxWidth: .infinity).clipped()
+            }
+            Text(video["title"] as? String ?? "Video").font(.caption.weight(.heavy)).lineLimit(2)
         }
-        Text(video["title"] as? String ?? "Video").font(.caption.weight(.heavy)).lineLimit(2)
+        .padding(10)
+        .background(RoundedRectangle(cornerRadius: AppRadii.md).fill(AppColors.bgSoft))
+
+        if let url = URL(string: watch), !watch.isEmpty {
+            Link(destination: url) { content }.buttonStyle(.plain)
+        } else {
+            content
+        }
     }
-    .padding(10)
-    .background(RoundedRectangle(cornerRadius: AppRadii.md).fill(AppColors.bgSoft))
-    if let url = URL(string: watch), !watch.isEmpty {
-        return AnyView(Link(destination: url) { content }.buttonStyle(.plain))
-    }
-    return AnyView(content)
 }
 
 @MainActor
