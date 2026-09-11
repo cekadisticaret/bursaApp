@@ -71,8 +71,11 @@ class BursaApi {
   }
 
   Future<Map<String, dynamic>> placeDetail(String slug) async {
-    final safe = Uri.encodeComponent(slug.trim());
-    final uri = Uri.parse('${AppConfig.apiBase}/places/$safe');
+    final s = slug.trim();
+    if (s.isEmpty) {
+      throw ApiException('Geçersiz slug', 400);
+    }
+    final uri = Uri.parse('${AppConfig.apiBase}/places/').resolve(s);
     final res = await _client.get(uri, headers: _headers);
     final data = await _decode(res);
     final place = data['place'];
@@ -226,8 +229,11 @@ class BursaApi {
   }
 
   Future<FavoriteResult> togglePlaceFavorite(String slug) async {
-    final safe = Uri.encodeComponent(slug.trim());
-    final uri = Uri.parse('${AppConfig.apiBase}/places/$safe/favorite');
+    final s = slug.trim();
+    if (s.isEmpty) {
+      throw ApiException('Geçersiz slug', 400);
+    }
+    final uri = Uri.parse('${AppConfig.apiBase}/places/').resolve('$s/favorite');
     final res = await _client.post(uri, headers: _headers);
     final data = await _decode(res);
     return FavoriteResult(

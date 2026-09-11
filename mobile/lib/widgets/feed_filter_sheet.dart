@@ -22,6 +22,7 @@ class FeedFilterSheet extends StatelessWidget {
     FeedFilterOption(label: 'Yeme-içme', icon: Icons.restaurant_rounded, action: FeedFilterAction.foodTab),
     FeedFilterOption(label: 'Gezilecek', icon: Icons.landscape_rounded, action: FeedFilterAction.visit),
     FeedFilterOption(label: 'Konserler', icon: Icons.music_note_rounded, action: FeedFilterAction.category),
+    FeedFilterOption(label: 'Tiyatro', icon: Icons.theater_comedy_rounded, action: FeedFilterAction.category),
     FeedFilterOption(label: 'Sinema', icon: Icons.movie_rounded, action: FeedFilterAction.category),
     FeedFilterOption(label: 'Oteller', icon: Icons.hotel_rounded, action: FeedFilterAction.category),
     FeedFilterOption(label: 'Eğlence', icon: Icons.celebration_rounded, action: FeedFilterAction.category),
@@ -30,6 +31,7 @@ class FeedFilterSheet extends StatelessWidget {
 
   static const _categoryKeys = {
     'Konserler': 'concert',
+    'Tiyatro': 'theater',
     'Sinema': 'cinema',
     'Oteller': 'hotel',
     'Eğlence': 'fun',
