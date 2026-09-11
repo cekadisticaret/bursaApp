@@ -1036,6 +1036,7 @@ private func videosSection(_ videos: [[String: Any]]) -> some View {
     }
 }
 
+@MainActor
 private func videoCard(_ video: [String: Any], large: Bool) -> some View {
     let watch = video["watch_url"] as? String ?? ""
     let content = VStack(alignment: .leading, spacing: 6) {
@@ -1052,6 +1053,7 @@ private func videoCard(_ video: [String: Any], large: Bool) -> some View {
     return AnyView(content)
 }
 
+@MainActor
 private func bursasporNewsSection(_ news: [[String: Any]]) -> some View {
     panel(title: "Öne çıkan gündem") {
         ForEach(Array(news.enumerated()), id: \.offset) { _, item in
@@ -1106,6 +1108,7 @@ private func standingsSection(_ standings: [[String: Any]], league: String) -> s
     }
 }
 
+@MainActor
 private func fixCard(_ match: [String: Any], upcoming: Bool) -> some View {
     let home = match["home_team"] as? String ?? ""
     let away = match["away_team"] as? String ?? ""
@@ -1143,7 +1146,7 @@ private func fixRow(_ match: [String: Any]) -> some View {
     let played = match["played"] as? Bool == true
     let score = played ? "\(JSONValue.string(match["home_score"]))–\(JSONValue.string(match["away_score"]))" : "vs"
     return HStack {
-        Text("\(week ?? "—")").frame(width: 28).font(.caption2).foregroundStyle(AppColors.muted)
+        Text(JSONValue.string(week, default: "—")).frame(width: 28).font(.caption2).foregroundStyle(AppColors.muted)
         Text("\(home) \(score) \(away)").font(.caption2)
         Spacer()
         Text(match["kickoff_at"] as? String ?? "—").font(.caption2).foregroundStyle(AppColors.muted)

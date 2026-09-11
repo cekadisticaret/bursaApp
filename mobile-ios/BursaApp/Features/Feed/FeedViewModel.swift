@@ -50,7 +50,7 @@ final class FeedViewModel: ObservableObject {
 
                 heroEvent = res.events.first
                 events = res.events
-                leaders = Array((try? await leadersRes) ?? []).prefix(8)
+                leaders = Array(((try? await leadersRes) ?? []).prefix(8))
                 let food = (try? await foodRes) ?? []
                 let visit = (try? await visitRes) ?? []
                 destinations = visit + food
