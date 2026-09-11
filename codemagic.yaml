@@ -37,6 +37,10 @@ workflows:
         script: |
           set -e
           xcodegen generate
+          VERSION_NAME=$(cat .ios_version_name)
+          BUILD_NUMBER=$(cat .ios_build_number)
+          bash scripts/ios_resolve_build.sh apply-pbxproj "$VERSION_NAME" "$BUILD_NUMBER"
+          grep CURRENT_PROJECT_VERSION BursaApp.xcodeproj/project.pbxproj | head -3
           ls -la BursaApp.xcodeproj
       - name: Set up code signing
         script: |
@@ -54,12 +58,20 @@ workflows:
           set -e
           VERSION_NAME=$(cat .ios_version_name)
           BUILD_NUMBER=$(cat .ios_build_number)
+          bash scripts/ios_resolve_build.sh apply-pbxproj "$VERSION_NAME" "$BUILD_NUMBER"
           xcode-project build-ipa \
             --project BursaApp.xcodeproj \
             --scheme BursaApp \
             --archive-flags "MARKETING_VERSION=$VERSION_NAME CURRENT_PROJECT_VERSION=$BUILD_NUMBER"
           mkdir -p artifacts
           find build -name '*.ipa' -exec cp {} artifacts/ \;
+          IPA=$(find artifacts build -name '*.ipa' 2>/dev/null | head -1)
+          IPA_BUILD=$(bash scripts/ios_resolve_build.sh ipa-build "$IPA" || echo "")
+          echo "IPA CFBundleVersion=$IPA_BUILD beklenen=$BUILD_NUMBER"
+          if [ -z "$IPA_BUILD" ] || [ "$IPA_BUILD" != "$BUILD_NUMBER" ]; then
+            echo "HATA: IPA build numarası eşleşmiyor"
+            exit 1
+          fi
           ls -la artifacts/ || find . -name '*.ipa'
       - name: Upload to App Store Connect
         script: |
@@ -73,9 +85,15 @@ workflows:
           done
           IPA=$(find artifacts build -name '*.ipa' 2>/dev/null | head -1)
           if [ -z "$IPA" ]; then echo "HATA: IPA yok"; exit 1; fi
-          if bash scripts/ios_resolve_build.sh should-upload "$BUILD_NUMBER" "$STORE_LATEST"; then
+          IPA_BUILD=$(bash scripts/ios_resolve_build.sh ipa-build "$IPA" || echo "")
+          echo "Store son=$STORE_LATEST · dosya=$BUILD_NUMBER · IPA=$IPA_BUILD"
+          if [ -n "$IPA_BUILD" ] && [ "$IPA_BUILD" -le "$STORE_LATEST" ]; then
+            echo "HATA: IPA build $IPA_BUILD zaten yüklü (son=$STORE_LATEST). Resolve adımını kontrol et."
+            exit 1
+          fi
+          if bash scripts/ios_resolve_build.sh should-upload "${IPA_BUILD:-$BUILD_NUMBER}" "$STORE_LATEST"; then
             app-store-connect publish --path "$IPA"
-            echo "✓ Native IPA yüklendi (build $BUILD_NUMBER)"
+            echo "✓ Native IPA yüklendi (build ${IPA_BUILD:-$BUILD_NUMBER})"
           else
             echo "✓ Upload atlandı"
           fi

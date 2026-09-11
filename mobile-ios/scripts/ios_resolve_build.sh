@@ -60,12 +60,37 @@ cmd_apply() {
   sed -i '' "s/CURRENT_PROJECT_VERSION: .*/CURRENT_PROJECT_VERSION: ${bn}/" "$yml"
 }
 
+cmd_apply_pbxproj() {
+  local vn="${1:?version_name}"
+  local bn="${2:?build_number}"
+  local pbx="${3:-$ROOT/BursaApp.xcodeproj/project.pbxproj}"
+  [[ -f "$pbx" ]] || return 0
+  sed -i '' "s/CURRENT_PROJECT_VERSION = [^;]*;/CURRENT_PROJECT_VERSION = ${bn};/g" "$pbx"
+  sed -i '' "s/MARKETING_VERSION = [^;]*;/MARKETING_VERSION = ${vn};/g" "$pbx"
+}
+
+cmd_ipa_build_number() {
+  local ipa="${1:?ipa}"
+  local plist_path plist
+  plist_path=$(unzip -Z1 "$ipa" 2>/dev/null | grep -E '^Payload/[^/]+\.app/Info\.plist$' | head -1 || true)
+  [[ -n "$plist_path" ]] || { echo ""; return 1; }
+  plist=$(unzip -p "$ipa" "$plist_path" 2>/dev/null || true)
+  [[ -n "$plist" ]] || { echo ""; return 1; }
+  if command -v plutil >/dev/null 2>&1; then
+    printf '%s' "$plist" | plutil -extract CFBundleVersion raw - 2>/dev/null || true
+  else
+    printf '%s' "$plist" | grep -A1 CFBundleVersion | tail -1 | sed 's/.*<string>\(.*\)<\/string>.*/\1/'
+  fi
+}
+
 case "${1:-}" in
   resolve) cmd_resolve "${2:-}" ;;
   should-upload) cmd_should_upload "$2" "$3" ;;
   apply) cmd_apply "$2" "$3" "${4:-}" ;;
+  apply-pbxproj) cmd_apply_pbxproj "$2" "$3" "${4:-}" ;;
+  ipa-build) cmd_ipa_build_number "$2" ;;
   *)
-    echo "usage: $0 resolve [project.yml] | should-upload BUILT STORE_LATEST | apply VERSION BUILD [project.yml]"
+    echo "usage: $0 resolve [project.yml] | should-upload BUILT STORE_LATEST | apply VERSION BUILD [project.yml] | apply-pbxproj VERSION BUILD [pbxproj] | ipa-build IPA"
     exit 2
     ;;
 esac
