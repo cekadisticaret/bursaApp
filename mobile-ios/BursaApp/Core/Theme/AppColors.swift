@@ -1,30 +1,43 @@
 import SwiftUI
 
 enum AppColors {
-    // FireVibe brief — #1B4332 primary
-    static let nav = Color(red: 27 / 255, green: 67 / 255, blue: 50 / 255)
-    static let bg = Color(red: 250 / 255, green: 250 / 255, blue: 251 / 255)
-    static let bgSoft = Color(red: 245 / 255, green: 246 / 255, blue: 248 / 255)
-    static let bgDeep = nav
-    static let card = Color.white
-    static let ink = Color(red: 20 / 255, green: 26 / 255, blue: 31 / 255)
-    static let muted = Color(red: 133 / 255, green: 138 / 255, blue: 148 / 255)
-    static let accent = Color(red: 237 / 255, green: 224 / 255, blue: 204 / 255)
-    static let accentDeep = nav
-    static let lime = nav
-    static let coral = Color(red: 0.95, green: 0.35, blue: 0.35)
-    static let amber = Color(red: 1.0, green: 0.78, blue: 0.20)
-    static let welcomeBg = bg
-    static let sky = nav
-    static let pink = Color(red: 0.95, green: 0.55, blue: 0.60)
-    static let peach = accent
-    static let chipBg = Color.white
-    static let chipSelected = accent
+    // ── BursaVibe FireVibe Palette ──────────────────────────────────────────
+    // primary: Bursa Mavisi
+    static let primary    = Color(red: 7/255,   green: 87/255,  blue: 217/255)  // #0757D9
+    static let secondary  = Color(red: 231/255, green: 238/255, blue: 252/255)  // #E7EEFC
+    static let accent     = Color(red: 245/255, green: 184/255, blue: 61/255)   // #F5B83D (Safran Altını)
+    static let success    = Color(red: 0/255,   green: 133/255, blue: 114/255)  // #008572
+    static let destructive = Color(red: 201/255, green: 54/255, blue: 59/255)  // #C9363B (Nar Kırmızısı)
+
+    // Surfaces
+    static let bg         = Color(red: 248/255, green: 247/255, blue: 242/255)  // #F8F7F2 (Kireçtaşı Beyazı)
+    static let card       = Color.white                                          // #FFFFFF
+    static let surface    = Color(red: 238/255, green: 237/255, blue: 232/255)  // #EEEDE8 (muted bg)
+    static let border     = Color(red: 217/255, green: 222/255, blue: 229/255)  // #D9DEE5
+
+    // Text
+    static let ink        = Color(red: 23/255,  green: 35/255,  blue: 59/255)   // #17233B (foreground)
+    static let muted      = Color(red: 93/255,  green: 104/255, blue: 120/255)  // #5D6878 (mutedForeground)
+
+    // ── Legacy aliases (backward compat) ───────────────────────────────────
+    static let nav        = primary
+    static let bgSoft     = Color(red: 243/255, green: 244/255, blue: 246/255)  // #F3F4F6
+    static let bgDeep     = primary
+    static let mutedFg    = muted
+    static let amber      = accent
+    static let coral      = destructive
+    static let chipBg     = card
+    static let chipSelected = secondary
+    static let accentDeep = primary
+    static let lime       = success
+    static let peach      = accent
+    static let sky        = primary
+    static let pink       = destructive
 }
 
 enum AppRadii {
-    static let sm: CGFloat = 16
-    static let md: CGFloat = 22
-    static let lg: CGFloat = 28
-    static let xl: CGFloat = 32
+    static let sm: CGFloat = 12
+    static let md: CGFloat = 16
+    static let lg: CGFloat = 20
+    static let xl: CGFloat = 26
 }

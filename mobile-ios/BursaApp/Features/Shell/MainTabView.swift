@@ -5,9 +5,9 @@ enum ShellTab: Int, CaseIterable {
 
     var title: String {
         switch self {
-        case .feed: "Ana sayfa"
-        case .explore: "Harita"
-        case .food: "Lezzet"
+        case .feed: "Anasayfa"
+        case .explore: "Yakınımda"
+        case .food: "Lezzet & Gece"
         case .profile: "Profil"
         }
     }
@@ -15,8 +15,8 @@ enum ShellTab: Int, CaseIterable {
     var icon: String {
         switch self {
         case .feed: "house.fill"
-        case .explore: "magnifyingglass"
-        case .food: "heart"
+        case .explore: "map.fill"
+        case .food: "fork.knife"
         case .profile: "person.fill"
         }
     }
@@ -148,73 +148,94 @@ struct FloatingTabBar: View {
     let onCreateTap: () -> Void
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 0) {
             tabIcon(.feed)
             tabIcon(.explore)
             createButton
             tabIcon(.food)
             profileIcon
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .frame(height: 68)
+        .padding(.horizontal, 8)
         .background(
-            Capsule()
+            RoundedRectangle(cornerRadius: 26)
                 .fill(Color.white)
-                .shadow(color: .black.opacity(0.10), radius: 16, y: 6)
+                .shadow(color: Color(red: 23/255, green: 35/255, blue: 59/255).opacity(0.16), radius: 20, y: 8)
+                .overlay(RoundedRectangle(cornerRadius: 26).stroke(AppColors.border.opacity(0.7), lineWidth: 1))
         )
-        .padding(.horizontal, 20)
-        .padding(.bottom, 8)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 10)
     }
 
     private func tabIcon(_ item: ShellTab) -> some View {
         Button { selection = item } label: {
-            ZStack {
-                if selection == item {
-                    Circle()
-                        .fill(AppColors.nav)
-                        .frame(width: 46, height: 46)
+            VStack(spacing: 4) {
+                ZStack {
+                    if selection == item {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(AppColors.secondary)
+                            .frame(width: 40, height: 32)
+                    }
+                    Image(systemName: item.icon)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(selection == item ? AppColors.primary : AppColors.muted)
                 }
-                Image(systemName: item.icon)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(selection == item ? .white : AppColors.muted)
+                Text(item.title)
+                    .font(.system(size: 10, weight: selection == item ? .bold : .semibold))
+                    .foregroundColor(selection == item ? AppColors.primary : AppColors.muted)
+                    .lineLimit(1)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 46)
         }
         .buttonStyle(.plain)
     }
 
     private var createButton: some View {
         Button(action: onCreateTap) {
-            Image(systemName: "plus")
-                .font(.title3.bold())
-                .foregroundStyle(.white)
-                .frame(width: 52, height: 52)
-                .background(Circle().fill(AppColors.nav).shadow(color: AppColors.nav.opacity(0.35), radius: 10, y: 5))
+            VStack(spacing: 4) {
+                Image(systemName: "plus")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(AppColors.ink)
+                    .frame(width: 56, height: 56)
+                    .background(Circle().fill(AppColors.accent)
+                        .shadow(color: AppColors.accent.opacity(0.45), radius: 12, y: 6))
+                    .offset(y: -10)
+                Text("Etkinlik")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(AppColors.muted)
+                    .offset(y: -10)
+            }
+            .frame(maxWidth: .infinity)
         }
-        .offset(y: -14)
+        .buttonStyle(.plain)
     }
 
     private var profileIcon: some View {
         Button { selection = .profile } label: {
-            ZStack {
-                if selection == .profile {
-                    Circle().fill(AppColors.nav).frame(width: 46, height: 46)
-                }
-                Group {
-                    if let userAvatar, !userAvatar.isEmpty {
-                        RemoteImage(url: userAvatar, placeholder: "person.fill")
-                    } else {
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 18, weight: .semibold))
+            VStack(spacing: 4) {
+                ZStack {
+                    if selection == .profile {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(AppColors.secondary)
+                            .frame(width: 40, height: 32)
+                    }
+                    Group {
+                        if let userAvatar, !userAvatar.isEmpty {
+                            RemoteImage(url: userAvatar, placeholder: "person.fill")
+                                .frame(width: 24, height: 24)
+                                .clipShape(Circle())
+                        } else {
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(selection == .profile ? AppColors.primary : AppColors.muted)
+                        }
                     }
                 }
-                .frame(width: 28, height: 28)
-                .clipShape(Circle())
-                .foregroundStyle(selection == .profile ? .white : AppColors.muted)
+                Text(ShellTab.profile.title)
+                    .font(.system(size: 10, weight: selection == .profile ? .bold : .semibold))
+                    .foregroundColor(selection == .profile ? AppColors.primary : AppColors.muted)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 46)
         }
         .buttonStyle(.plain)
     }
