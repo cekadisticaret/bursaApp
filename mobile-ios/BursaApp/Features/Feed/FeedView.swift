@@ -164,7 +164,6 @@ struct FeedView: View {
             }
             .padding(.horizontal, 16).padding(.vertical, 10)
             .background(AppColors.secondary)
-            .clipShape(RoundedRectangle(cornerRadius: AppRadii.lg).corners(.bottom))
         }
         .background(AppColors.card)
         .clipShape(RoundedRectangle(cornerRadius: AppRadii.lg))
@@ -390,8 +389,8 @@ struct FeedView: View {
             }
 
             // Image
-            if let imgUrl = event.imgUrl, !imgUrl.isEmpty {
-                RemoteImage(url: imgUrl, placeholder: "photo")
+            if !event.imgUrl.isEmpty {
+                RemoteImage(url: event.imgUrl, placeholder: "photo")
                     .frame(maxWidth: .infinity, minHeight: 180, maxHeight: 220)
                     .clipped()
             }
@@ -430,22 +429,3 @@ struct FeedView: View {
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// MARK: RoundedCorner helper (iOS 16 safe)
-// ─────────────────────────────────────────────────────────────
-private extension RoundedRectangle {
-    func corners(_ corners: UIRectCorner) -> some Shape {
-        self
-    }
-}
-
-// Simple corners extension for the compose card bottom rounding
-private struct RoundedCorners: Shape {
-    var radius: CGFloat
-    var corners: UIRectCorner
-    func path(in rect: CGRect) -> Path {
-        Path(UIBezierPath(roundedRect: rect,
-                          byRoundingCorners: corners,
-                          cornerRadii: CGSize(width: radius, height: radius)).cgPath)
-    }
-}

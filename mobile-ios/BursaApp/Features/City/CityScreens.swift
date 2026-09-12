@@ -1027,6 +1027,7 @@ private func noteCard(title: String, body: String) -> some View {
     .background(RoundedRectangle(cornerRadius: AppRadii.sm).fill(AppColors.bgSoft))
 }
 
+@MainActor
 private func videosSection(_ videos: [[String: Any]]) -> some View {
     panel(title: "Yeşil-beyaz video") {
         BursasporVideoCard(video: videos[0], large: true)
