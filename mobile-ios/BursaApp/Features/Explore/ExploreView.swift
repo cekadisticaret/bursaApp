@@ -54,23 +54,12 @@ struct ExploreView: View {
                 .ignoresSafeArea()
 
                 VStack(spacing: 12) {
-                    HStack(spacing: 8) {
-                        Image("BrandMark")
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 24, height: 24)
-                            .clipShape(RoundedRectangle(cornerRadius: 7))
-                        Text("bursaapp")
-                            .font(.system(size: 20, weight: .heavy))
-                            .foregroundStyle(AppColors.ink)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(Capsule().fill(.white.opacity(0.95)).shadow(color: .black.opacity(0.08), radius: 8, y: 3))
-                    .padding(.top, 8)
+                    TravelTopBar(location: "Bursa haritası", notificationCount: 0, onNotificationsTap: {})
+                        .padding(.horizontal, AppSpacing.screenX)
+                        .padding(.top, 8)
 
                     TravelCategoryChips(selected: $chip)
-                        .padding(.horizontal, 18)
+                        .padding(.horizontal, AppSpacing.screenX)
                     Spacer()
                 }
 
@@ -288,9 +277,9 @@ private final class TravelPinView: MKAnnotationView {
     func configure(place: PlaceItem, selected: Bool) {
         let cfg = UIImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
         iconView.image = UIImage(systemName: lighthouseCategoryIcon(place.category), withConfiguration: cfg)
-        iconView.tintColor = UIColor(red: 0.09, green: 0.22, blue: 0.16, alpha: 1)
+        iconView.tintColor = UIColor(red: 27 / 255, green: 67 / 255, blue: 50 / 255, alpha: 1)
         ring.layer.borderColor = selected
-            ? UIColor(red: 0.09, green: 0.22, blue: 0.16, alpha: 1).cgColor
+            ? UIColor(red: 27 / 255, green: 67 / 255, blue: 50 / 255, alpha: 1).cgColor
             : UIColor.clear.cgColor
     }
 }

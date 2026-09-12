@@ -16,7 +16,7 @@ struct FeedView: View {
 
     var body: some View {
         ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: AppSpacing.section) {
                 TravelTopBar(location: "Bursa, Türkiye", notificationCount: 2, onNotificationsTap: { showNotifications = true })
                 TravelHeroTitle()
                 TravelSearchCapsule(query: $query, onSearchTap: { onSearchTap?() })
@@ -42,9 +42,15 @@ struct FeedView: View {
                 if chip == .all || chip == .event {
                     eventsSection
                 }
+                if !vm.leaders.isEmpty {
+                    leadersSection
+                }
+                if !vm.locals.isEmpty {
+                    localsSection
+                }
                 destinationsSection
             }
-            .padding(.horizontal, 18)
+            .padding(.horizontal, AppSpacing.screenX)
             .padding(.bottom, 24)
         }
         .background(AppColors.bg.ignoresSafeArea())
@@ -110,6 +116,35 @@ struct FeedView: View {
         }
         .padding(12)
         .background(RoundedRectangle(cornerRadius: AppRadii.md).fill(.white).shadow(color: .black.opacity(0.05), radius: 8, y: 3))
+    }
+
+    private var leadersSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            TravelSectionHeader(title: "Haftanın liderleri")
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 14) {
+                    ForEach(vm.leaders) { leader in
+                        TravelLeaderCard(leader: leader)
+                    }
+                }
+            }
+        }
+    }
+
+    private var localsSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            TravelSectionHeader(title: "Yerel favoriler")
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(vm.locals) { place in
+                        NavigationLink(value: place.detailSlug) {
+                            TravelLocalAvatar(place: place)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
     }
 
     private var destinationsSection: some View {

@@ -116,7 +116,7 @@ struct PlaceDetailView: View {
                     }
                 }
             }
-            .padding(.horizontal, 18)
+            .padding(.horizontal, AppSpacing.screenX)
             .padding(.top, 16)
         }
     }

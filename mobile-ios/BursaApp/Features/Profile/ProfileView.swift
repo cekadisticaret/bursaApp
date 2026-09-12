@@ -57,7 +57,7 @@ struct ProfileView: View {
             .buttonStyle(.plain)
 
             Text(auth.isLoggedIn ? (auth.user?.displayName ?? "Üye") : "Giriş")
-                .font(.title2.weight(.black))
+                .font(AppTypography.screenTitle)
             Text(auth.isLoggedIn ? "\(auth.user?.points ?? 0) puan · Bursa rehberi" : "Hesabınla devam et")
                 .font(.subheadline)
                 .foregroundStyle(AppColors.muted)

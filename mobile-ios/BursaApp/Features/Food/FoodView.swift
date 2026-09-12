@@ -12,17 +12,9 @@ struct FoodView: View {
     var body: some View {
         NavigationStack(path: $path) {
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 22) {
+                VStack(alignment: .leading, spacing: AppSpacing.section) {
                     TravelTopBar(location: "Bursa, Türkiye", notificationCount: 0, onNotificationsTap: {})
-                    (
-                        Text("Lezzet\n")
-                            .foregroundColor(AppColors.ink)
-                        + Text("durakları ")
-                            .foregroundColor(AppColors.nav)
-                        + Text("keşfet")
-                            .foregroundColor(AppColors.ink)
-                    )
-                    .font(.system(size: 28, weight: .bold))
+                    foodHeroTitle
                     TravelSearchCapsule(query: $query, placeholder: "Restoran, kafe ara…", onSearchTap: { showSearch = true })
                         .onChange(of: query) { _ in vm.applyFilters() }
 
@@ -63,7 +55,7 @@ struct FoodView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, 18)
+                .padding(.horizontal, AppSpacing.screenX)
                 .padding(.bottom, 100)
             }
             .background(AppColors.bg.ignoresSafeArea())
@@ -76,6 +68,18 @@ struct FoodView: View {
             }
             .sheet(isPresented: $showAuth) { AuthFlowView() }
         }
+    }
+
+    private var foodHeroTitle: some View {
+        (
+            Text("Lezzet\n")
+                .foregroundColor(AppColors.ink)
+            + Text("durakları ")
+                .foregroundColor(AppColors.nav)
+            + Text("keşfet")
+                .foregroundColor(AppColors.ink)
+        )
+        .font(AppTypography.screenTitle)
     }
 
     private func foodGridCard(_ place: PlaceItem) -> some View {

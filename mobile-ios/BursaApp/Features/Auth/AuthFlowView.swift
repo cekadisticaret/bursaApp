@@ -1,17 +1,17 @@
 import SwiftUI
 
-// MARK: - Auth palette (referans onboarding)
+// MARK: - Auth palette (FireVibe / AppColors)
 
 private enum AuthPalette {
-    static let sage = Color(red: 0.98, green: 0.98, blue: 0.985)
-    static let forest = Color(red: 0.09, green: 0.22, blue: 0.16)
-    static let hill = Color(red: 0.09, green: 0.22, blue: 0.16)
-    static let hillDark = Color(red: 0.07, green: 0.18, blue: 0.13)
-    static let balloonYellow = Color(red: 0.93, green: 0.88, blue: 0.80)
-    static let pinOrange = Color(red: 0.93, green: 0.88, blue: 0.80)
-    static let shoeYellow = Color(red: 0.93, green: 0.88, blue: 0.80)
-    static let mapYellow = Color(red: 0.93, green: 0.88, blue: 0.80)
-    static let mutedText = Color(red: 0.52, green: 0.54, blue: 0.58)
+    static let sage = AppColors.bg
+    static let forest = AppColors.nav
+    static let hill = AppColors.nav
+    static let hillDark = Color(red: 22 / 255, green: 55 / 255, blue: 41 / 255)
+    static let balloonYellow = AppColors.chipSelected
+    static let pinOrange = AppColors.chipSelected
+    static let shoeYellow = AppColors.chipSelected
+    static let mapYellow = AppColors.chipSelected
+    static let mutedText = AppColors.muted
 }
 
 struct AuthFlowView: View {

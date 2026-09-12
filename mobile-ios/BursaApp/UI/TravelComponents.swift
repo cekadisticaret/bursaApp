@@ -77,7 +77,7 @@ struct TravelHeroTitle: View {
                 + Text("gitmek\nistiyorsun?")
                     .foregroundColor(AppColors.ink)
             )
-            .font(.system(size: 30, weight: .bold))
+            .font(AppTypography.hero)
             .lineSpacing(2)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -386,4 +386,61 @@ func travelRating(seed: Int) -> String {
 
 func travelJoinCount(seed: Int) -> Int {
     12 + abs(seed) % 320
+}
+
+struct TravelLeaderCard: View {
+    let leader: LeaderRow
+
+    var body: some View {
+        VStack(spacing: 8) {
+            ZStack(alignment: .bottomTrailing) {
+                Group {
+                    if leader.avatarUrl.isEmpty {
+                        Text(String(leader.name.prefix(1)).uppercased())
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .background(AppColors.nav)
+                    } else {
+                        RemoteImage(url: leader.avatarUrl, placeholder: "person.fill")
+                    }
+                }
+                .frame(width: 64, height: 64)
+                .clipShape(Circle())
+                Text("#\(leader.rank)")
+                    .font(.system(size: 9, weight: .heavy))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(Capsule().fill(AppColors.nav))
+                    .offset(x: 4, y: 4)
+            }
+            Text(leader.name)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(AppColors.ink)
+                .lineLimit(1)
+            Text("\(leader.points) puan")
+                .font(.caption2)
+                .foregroundStyle(AppColors.muted)
+        }
+        .frame(width: 88)
+    }
+}
+
+struct TravelLocalAvatar: View {
+    let place: PlaceItem
+
+    var body: some View {
+        VStack(spacing: 6) {
+            RemoteImage(url: place.imgUrl, placeholder: "photo")
+                .frame(width: 56, height: 56)
+                .clipShape(Circle())
+                .overlay(Circle().stroke(AppColors.chipSelected, lineWidth: 2))
+            Text(place.title)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(AppColors.ink)
+                .lineLimit(1)
+                .frame(width: 64)
+        }
+    }
 }
